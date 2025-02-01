@@ -1,3 +1,3 @@
 # headwins-poker
 
-test
+Analytics for Headwins Poker.
