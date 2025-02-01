@@ -1,4 +1,5 @@
 import os
+import sys
 from decimal import Decimal
 from pathlib import Path
 from typing import List
@@ -31,3 +32,4 @@ if __name__ == "__main__":
     for player, net in player_nets.items():
         direction = "DOWN" if net < 0 else "UP"
         print(f"{player}: ${abs(net):,.2f} {direction}")
+        sys.stdout.flush()
