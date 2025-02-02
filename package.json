@@ -1,0 +1,25 @@
+{
+  "name": "headwins-poker",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Analytics for Headwins Poker.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eluo28/headwins-poker.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/eluo28/headwins-poker/issues"
+  },
+  "homepage": "https://github.com/eluo28/headwins-poker#readme",
+  "dependencies": {
+    "discord.js": "^14.17.3",
+    "dotenv": "^16.4.7"
+  }
+}
