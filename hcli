@@ -1,0 +1,1 @@
+poetry run python buildscripts/hcli.py "$@"

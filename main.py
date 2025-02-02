@@ -3,9 +3,9 @@ from decimal import Decimal
 from pathlib import Path
 from typing import List
 
-from src.analytics_helpers import get_all_player_nets
-from src.schemas.session import PokerSession
-from src.session_loading_helpers import load_sessions, load_starting_data
+from src.analytics.analytics_helpers import get_all_player_nets
+from src.parsing.schemas.session import PokerSession
+from src.parsing.session_loading_helpers import load_sessions, load_starting_data
 
 if __name__ == "__main__":
     all_sessions: List[PokerSession] = []

@@ -4,7 +4,7 @@ from decimal import Decimal
 from pathlib import Path
 from typing import List
 
-from src.schemas.session import PokerSession
+from src.parsing.schemas.session import PokerSession
 
 
 def parse_utc_datetime(dt_str: str) -> datetime:

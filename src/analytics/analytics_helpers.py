@@ -1,8 +1,8 @@
 from decimal import Decimal
 from typing import List
 
-from src.player_mapping import PLAYER_MAPPING
-from src.schemas.session import PokerSession
+from src.parsing.player_mapping import PLAYER_MAPPING
+from src.parsing.schemas.session import PokerSession
 
 
 def get_player_net(sessions: List[PokerSession], player_id: str) -> Decimal:

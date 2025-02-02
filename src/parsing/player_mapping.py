@@ -1,7 +1,7 @@
 PLAYER_MAPPING = {
     "Edwin": {
-        "played_nicknames": ["edwin", "edwin2"],
-        "played_ids": ["BBmVmvqhnO", "9M0NBGM9an"],
+        "played_nicknames": ["edwin"],
+        "played_ids": ["9M0NBGM9an"],
     },
     "Larry": {"played_nicknames": ["larry"], "played_ids": ["vTnkzfSe3x"]},
     "Josh": {"played_nicknames": ["joshy"], "played_ids": ["fmjgGR4d_8"]},
