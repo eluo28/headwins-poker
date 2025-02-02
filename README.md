@@ -14,3 +14,10 @@ Currently to get net totals for each player, run the script, use `poetry run pyt
 poetry install  # Install dependencies
 poetry run python main.py  # Run the script
 ```
+
+## CLI
+
+```bash
+./hcli fixall  # Format and fix linting errors
+```
+
