@@ -1,4 +1,5 @@
 import csv
+import os
 from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
@@ -67,8 +68,72 @@ def load_starting_data(csv_path: str | Path) -> dict[str, Decimal]:
     """
     starting_data: dict[str, Decimal] = {}
     with open(csv_path) as f:
-        next(f)  # Skip header
+        # Check if file has content
+        first_line = f.readline()
+        if not first_line:  # File is empty
+            return starting_data
+
+        # Process remaining lines
         for line in f:
+            if not line.strip():  # Skip empty lines
+                continue
             name, net = line.strip().split(",")
             starting_data[name] = Decimal(net)
+
     return starting_data
+
+
+def get_csv_files_from_directory(directory: str) -> list[Path]:
+    csv_files: list[Path] = []
+    for filename in os.listdir(directory):
+        if filename.endswith(".csv"):
+            filepath = os.path.join(directory, filename)
+            csv_files.append(Path(filepath))
+    return csv_files
+
+
+def merge_player_data(
+    current_data: dict[str, Decimal],
+    additional_data: dict[str, Decimal],
+    fill_missing: bool = True,
+) -> dict[str, Decimal]:
+    """
+    Merges two player data dictionaries and adjusts values.
+
+    Args:
+        current_data: Primary dictionary of player data
+        additional_data: Secondary dictionary to merge/add
+        fill_missing: If True, adds missing players with 0 value
+    """
+    result = current_data.copy()
+
+    # Add missing players with zero value
+    if fill_missing:
+        for player in additional_data:
+            if player not in result:
+                result[player] = Decimal("0")
+
+    # Add additional data values
+    for player in result:
+        if player in additional_data:
+            result[player] += additional_data[player]
+
+    return result
+
+
+def load_all_sessions(ledgers_dir: str) -> List[PokerSession]:
+    """
+    Loads and combines all poker sessions from CSV files in a directory.
+
+    Args:
+        ledgers_dir: Directory path containing session CSV files
+
+    Returns:
+        List of all sessions combined
+    """
+    all_sessions: List[PokerSession] = []
+    filepaths = get_csv_files_from_directory(ledgers_dir)
+    for filepath in filepaths:
+        sessions = load_sessions(Path(filepath))
+        all_sessions.extend(sessions)
+    return all_sessions
