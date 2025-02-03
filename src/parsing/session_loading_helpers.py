@@ -1,11 +1,12 @@
 import csv
 import os
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import List
 
 from src.parsing.schemas.session import PokerSession
+from src.parsing.schemas.starting_data_entry import StartingDataEntry
 
 
 def parse_utc_datetime(dt_str: str) -> datetime:
@@ -56,7 +57,7 @@ def load_sessions(csv_path: Path) -> List[PokerSession]:
     return sessions
 
 
-def load_starting_data(csv_path: str | Path) -> dict[str, Decimal]:
+def load_starting_data(csv_path: str | Path) -> List[StartingDataEntry]:
     """
     Load starting balances from CSV file
 
@@ -64,21 +65,18 @@ def load_starting_data(csv_path: str | Path) -> dict[str, Decimal]:
         csv_path: Path to the starting data CSV file
 
     Returns:
-        Dictionary mapping player names to their starting balances
+        List of StartingDataEntry objects containing player starting balances
     """
-    starting_data: dict[str, Decimal] = {}
+    starting_data: List[StartingDataEntry] = []
     with open(csv_path) as f:
-        # Check if file has content
-        first_line = f.readline()
-        if not first_line:  # File is empty
-            return starting_data
-
-        # Process remaining lines
         for line in f:
-            if not line.strip():  # Skip empty lines
-                continue
-            name, net = line.strip().split(",")
-            starting_data[name] = Decimal(net)
+            name, net, date_str = line.strip().split(",")
+            entry = StartingDataEntry(
+                player_name=name,
+                net_dollars=Decimal(net),
+                date=date.fromisoformat(date_str),
+            )
+            starting_data.append(entry)
 
     return starting_data
 

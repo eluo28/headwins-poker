@@ -11,7 +11,9 @@ dependencies = [
     "pydantic>=2.6.1",
     "discord-py (>=2.4.0,<3.0.0)",
     "python-dotenv (>=1.0.1,<2.0.0)",
-    "typer (>=0.15.1,<0.16.0)"
+    "typer (>=0.15.1,<0.16.0)",
+    "pandas (>=2.2.3,<3.0.0)",
+    "matplotlib (>=3.10.0,<4.0.0)"
 ]
 
 
@@ -35,3 +37,10 @@ exclude = ["**/__pycache__"]
 pythonVersion = "3.12"
 typeCheckingMode = "strict"
 
+# Unknown type checks make working with 3p libraries too difficult
+reportMissingTypeStubs = "none"
+reportUnknownArgumentType = "none"
+reportUnknownMemberType = "none"
+reportUnknownParameterType = "none"
+reportUnknownLambdaType = "none"
+reportUnknownVariableType = "none"

@@ -1,15 +1,12 @@
 from typing import List
 
+import discord
 from discord.ext import commands
 
-from src.analytics.analytics_helpers import get_all_player_nets
+from src.analytics.visualizations import get_file_object_of_player_nets_over_time
 from src.config import LEDGERS_DIR, STARTING_DATA_PATH
 from src.parsing.schemas.session import PokerSession
-from src.parsing.session_loading_helpers import (
-    load_all_sessions,
-    load_starting_data,
-    merge_player_data,
-)
+from src.parsing.session_loading_helpers import load_all_sessions, load_starting_data
 
 
 async def graph_all_player_nets(ctx: commands.Context[commands.Bot]):
@@ -17,21 +14,13 @@ async def graph_all_player_nets(ctx: commands.Context[commands.Bot]):
     ledgers_dir = LEDGERS_DIR
     all_sessions = load_all_sessions(ledgers_dir)
 
-    player_nets = get_all_player_nets(all_sessions)
     starting_data = load_starting_data(STARTING_DATA_PATH)
-    player_nets = merge_player_data(player_nets, starting_data)
 
-    # Sort players by net in descending order
-    sorted_players_descending = sorted(
-        player_nets.items(), key=lambda x: x[1], reverse=True
-    )
+    file_object = get_file_object_of_player_nets_over_time(all_sessions, starting_data)
 
-    result_msg = "\n".join(
-        f"{player}: ${abs(net):,.2f} {'DOWN' if net < 0 else 'UP'}"
-        for player, net in sorted_players_descending
-    )
+    discord_file = discord.File(file_object, filename="player_nets_over_time.png")
 
-    await ctx.send(result_msg)
+    await ctx.send(file=discord_file)
 
 
 def setup_commands(bot: commands.Bot):
