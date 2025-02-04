@@ -1,9 +1,10 @@
 from io import BytesIO
 from typing import List
 
-import matplotlib.pyplot as plt
 import pandas as pd
+import plotly.express as px
 
+from src.parsing.player_mapping import PLAYER_ID_TO_NAME
 from src.parsing.schemas.session import PokerSession
 from src.parsing.schemas.starting_data_entry import StartingDataEntry
 
@@ -11,11 +12,13 @@ from src.parsing.schemas.starting_data_entry import StartingDataEntry
 def get_file_object_of_player_nets_over_time(
     sessions: List[PokerSession], starting_data: List[StartingDataEntry]
 ) -> BytesIO:
-    # Convert sessions to DataFrame
+    # Convert sessions to DataFrame with mapped names
     df = pd.DataFrame(
         [
             {
-                "player": session.player_nickname,
+                "player": PLAYER_ID_TO_NAME.get(
+                    session.player_id, session.player_nickname
+                ),  # Fallback to ID if not mapped
                 "date": session.session_start_at.date(),
                 "net": session.net_dollars,
             }
@@ -44,24 +47,46 @@ def get_file_object_of_player_nets_over_time(
     player_nets = player_nets.pivot(index="date", columns="player", values="net")
     player_nets = player_nets.fillna(0).cumsum()
 
-    # Create plot
-    plt.figure(figsize=(12, 8))
-    for player in player_nets.columns:
-        plt.plot(player_nets.index, player_nets[player], label=player, marker="o")
+    # Create plot using Plotly
+    fig = px.line(
+        player_nets,
+        markers=True,
+        title="Player Net Profits/Losses Over Time",
+    )
 
-    min_date = min(entry.date for entry in starting_data)
-    plt.xlim(left=min_date)
+    # Update legend names to include final values and sort by value
+    sorted_traces = sorted(
+        fig.data,
+        key=lambda trace: player_nets[trace.name].iloc[-1],
+        reverse=True,  # type: ignore
+    )
+    fig.data = sorted_traces
 
-    plt.title("Player Net Profits/Losses Over Time")
-    plt.xlabel("Date")
-    plt.ylabel("Net Profit/Loss ($)")
-    plt.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
-    plt.grid(True)
+    for trace in fig.data:
+        player_name = trace.name  # type: ignore
+        final_value = player_nets[player_name].iloc[-1]
+        trace.name = f"{player_name} (${final_value:,.2f})"  # type: ignore
 
+    # Customize layout
+    fig.update_layout(
+        xaxis_title="Date",
+        yaxis_title="Net Profit/Loss ($)",
+        xaxis_tickangle=45,
+        xaxis_range=[
+            player_nets.index[0],
+            max(
+                player_nets.index[-1],  # Use last date if more than 10 days
+                player_nets.index[0]
+                + pd.Timedelta(days=10),  # Ensure at least 10 days shown
+            ),
+        ],
+        legend=dict(yanchor="middle", y=0.5, xanchor="left", x=1.02),
+        height=600,
+        width=1000,
+    )
+
+    # Save to buffer
     buffer = BytesIO()
-    plt.savefig(buffer, format="png", bbox_inches="tight")
-    plt.close()
-
-    # Reset buffer position to start
+    fig.write_image(buffer, format="png")
     buffer.seek(0)
     return buffer

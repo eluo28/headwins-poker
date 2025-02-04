@@ -1,15 +1,21 @@
 PLAYER_MAPPING = {
     "Edwin": {
-        "played_nicknames": ["edwin"],
         "played_ids": ["9M0NBGM9an"],
     },
-    "Larry": {"played_nicknames": ["larry"], "played_ids": ["vTnkzfSe3x"]},
-    "Josh": {"played_nicknames": ["joshy"], "played_ids": ["fmjgGR4d_8"]},
-    "Glenny": {
-        "played_nicknames": ["glenny", "glenny2"],
-        "played_ids": ["_ID7L-y9Ic", "Fp4ysonQPU"],
+    "Larry": {"played_ids": ["vTnkzfSe3x"]},
+    "Josh": {"played_ids": ["fmjgGR4d_8"]},
+    "Allen": {
+        "played_ids": ["O4o2WcWz3Z"],
     },
-    "Jeff": {"played_nicknames": ["ieff"], "played_ids": ["FMYFFNvVDL"]},
-    "Mond": {"played_nicknames": ["mond"], "played_ids": ["VnzuRuUJp5"]},
-    "Gob": {"played_nicknames": ["gob"], "played_ids": ["-HnKEXRxVA"]},
+    "Jeff": {"played_ids": ["FMYFFNvVDL"]},
+    "Mond": {"played_ids": ["VnzuRuUJp5"]},
+    "Gob": {"played_ids": ["-HnKEXRxVA"]},
+    "Nick": {"played_ids": ["23ejw2m6D-"]},
+    "Dan": {"played_ids": ["ArJnWs8BqK"]},
+}
+
+PLAYER_ID_TO_NAME = {
+    player_id: name
+    for name, data in PLAYER_MAPPING.items()
+    for player_id in data["played_ids"]
 }
