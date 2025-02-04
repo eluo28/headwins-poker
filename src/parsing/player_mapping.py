@@ -12,6 +12,7 @@ PLAYER_MAPPING = {
     "Gob": {"played_ids": ["-HnKEXRxVA"]},
     "Nick": {"played_ids": ["23ejw2m6D-"]},
     "Dan": {"played_ids": ["ArJnWs8BqK"]},
+    "Addison": {"played_ids": ["YRv7Vh3JH0"]},
 }
 
 PLAYER_ID_TO_NAME = {
