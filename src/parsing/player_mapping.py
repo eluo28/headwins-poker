@@ -3,7 +3,7 @@ PLAYER_MAPPING = {
         "played_ids": ["9M0NBGM9an"],
     },
     "Larry": {"played_ids": ["vTnkzfSe3x"]},
-    "Josh": {"played_ids": ["fmjgGR4d_8"]},
+    "Josh": {"played_ids": ["Z_WOxDxS2G"]},
     "Allen": {
         "played_ids": ["O4o2WcWz3Z"],
     },
