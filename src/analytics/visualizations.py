@@ -57,8 +57,8 @@ def get_file_object_of_player_nets_over_time(
     # Update legend names to include final values and sort by value
     sorted_traces = sorted(
         fig.data,
-        key=lambda trace: player_nets[trace.name].iloc[-1],
-        reverse=True,  # type: ignore
+        key=lambda trace: player_nets[trace.name].iloc[-1],  # type: ignore
+        reverse=True,
     )
     fig.data = sorted_traces
 

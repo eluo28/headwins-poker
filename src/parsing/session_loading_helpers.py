@@ -90,35 +90,6 @@ def get_csv_files_from_directory(directory: str) -> list[Path]:
     return csv_files
 
 
-def merge_player_data(
-    current_data: dict[str, Decimal],
-    additional_data: dict[str, Decimal],
-    fill_missing: bool = True,
-) -> dict[str, Decimal]:
-    """
-    Merges two player data dictionaries and adjusts values.
-
-    Args:
-        current_data: Primary dictionary of player data
-        additional_data: Secondary dictionary to merge/add
-        fill_missing: If True, adds missing players with 0 value
-    """
-    result = current_data.copy()
-
-    # Add missing players with zero value
-    if fill_missing:
-        for player in additional_data:
-            if player not in result:
-                result[player] = Decimal("0")
-
-    # Add additional data values
-    for player in result:
-        if player in additional_data:
-            result[player] += additional_data[player]
-
-    return result
-
-
 def load_all_sessions(ledgers_dir: str) -> List[PokerSession]:
     """
     Loads and combines all poker sessions from CSV files in a directory.
