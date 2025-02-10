@@ -1,18 +1,24 @@
 PLAYER_MAPPING = {
     "Edwin": {
         "played_ids": ["9M0NBGM9an"],
+        "played_nicknames": ["edwin"],
     },
-    "Larry": {"played_ids": ["vTnkzfSe3x, f2FO7_98Oo"]},
-    "Josh": {"played_ids": ["Z_WOxDxS2G"]},
+    "Larry": {
+        "played_ids": ["vTnkzfSe3x, f2FO7_98Oo"],
+        "played_nicknames": ["larry"],
+    },
+    "Josh": {"played_ids": ["Z_WOxDxS2G"], "played_nicknames": []},
     "Allen": {
         "played_ids": ["O4o2WcWz3Z"],
+        "played_nicknames": [],
     },
-    "Jeff": {"played_ids": ["FMYFFNvVDL"]},
-    "Mond": {"played_ids": ["VnzuRuUJp5"]},
-    "Gob": {"played_ids": ["-HnKEXRxVA"]},
-    "Nick": {"played_ids": ["23ejw2m6D-"]},
-    "Dan": {"played_ids": ["ArJnWs8BqK"]},
-    "Addison": {"played_ids": ["YRv7Vh3JH0"]},
+    "Jeff": {"played_ids": ["FMYFFNvVDL"], "played_nicknames": []},
+    "Mond": {"played_ids": ["VnzuRuUJp5"], "played_nicknames": []},
+    "Gob": {"played_ids": ["-HnKEXRxVA"], "played_nicknames": []},
+    "Nick": {"played_ids": ["23ejw2m6D-"], "played_nicknames": []},
+    "Dan": {"played_ids": ["ArJnWs8BqK"], "played_nicknames": []},
+    "Addison": {"played_ids": ["YRv7Vh3JH0"], "played_nicknames": []},
+    "Chris": {"played_ids": [], "played_nicknames": ["kris", "CF"]},
 }
 
 PLAYER_ID_TO_NAME = {
@@ -20,4 +26,10 @@ PLAYER_ID_TO_NAME = {
     for name, data in PLAYER_MAPPING.items()
     for played_id in data["played_ids"]
     for player_id in played_id.split(",")
+}
+PLAYER_NICKNAME_TO_NAME = {
+    nickname.strip(): name
+    for name, data in PLAYER_MAPPING.items()
+    for played_nickname in data["played_nicknames"]
+    for nickname in played_nickname.split(",")
 }
