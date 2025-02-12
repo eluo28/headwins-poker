@@ -14,6 +14,9 @@ async def graph_all_player_nets(interaction: discord.Interaction):
     await interaction.response.defer()
     all_sessions = load_all_sessions(LEDGERS_DIR)
     starting_data = load_starting_data(STARTING_DATA_PATH)
+    print(
+        f"Loaded {len(all_sessions)} sessions and {len(starting_data)} starting data entries"
+    )
     file_object = get_file_object_of_player_nets_over_time(all_sessions, starting_data)
     discord_file = discord.File(file_object, filename="player_nets_over_time.png")
 

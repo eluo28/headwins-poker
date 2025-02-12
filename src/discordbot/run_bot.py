@@ -1,3 +1,4 @@
+import logging
 import os
 
 import discord
@@ -11,17 +12,28 @@ intents.message_content = True
 intents.members = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    force=True,
+)
+
+logger = logging.getLogger(__name__)
+
+
+@bot.event
+async def on_ready():
+    logger.info(
+        f"Logged in as {bot.user} (ID: {bot.user.id if bot.user else 'unknown'})"
+    )
+    logger.info("------")
+    await bot.tree.sync()
+    logger.info("Command tree synced!")
+    logger.info("------")
+
 
 if __name__ == "__main__":
     load_dotenv()
-
-    @bot.event
-    async def on_ready():
-        print(f"Logged in as {bot.user} (ID: {bot.user.id if bot.user else 'unknown'})")
-        print("------")
-        await bot.tree.sync()
-        print("Command tree synced!")
-        print("------")
 
     token = os.getenv("DISCORD_TOKEN")
     if not token:
