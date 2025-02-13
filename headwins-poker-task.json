@@ -16,6 +16,12 @@
                     "awslogs-stream-prefix": "ecs"
                 }
             },
+            "secrets": [
+                {
+                    "name": "DISCORD_TOKEN",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:156041442666:secret:discord_token-AlSztc"
+                }
+            ],
             "environment": [],
             "mountPoints": [],
             "volumesFrom": [],

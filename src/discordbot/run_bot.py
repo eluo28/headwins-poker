@@ -6,6 +6,7 @@ from discord.ext import commands
 from dotenv import load_dotenv
 
 from src.discordbot.commands import setup_commands
+from src.get_secret import get_secret
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -35,9 +36,8 @@ async def on_ready():
 if __name__ == "__main__":
     load_dotenv()
 
-    token = os.getenv("DISCORD_TOKEN")
-    if not token:
-        raise ValueError("DISCORD_TOKEN environment variable is not set")
+    # Get token from environment variable in dev, AWS Secrets Manager in prod
+    token = get_secret("discord_token")
 
     setup_commands(bot)
 
