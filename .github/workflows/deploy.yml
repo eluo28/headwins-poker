@@ -46,4 +46,5 @@ jobs:
         task-definition: headwins-poker-task.json
         service: ${{ env.ECS_SERVICE }}
         cluster: ${{ env.ECS_CLUSTER }}
+        desired-count: 1
         wait-for-service-stability: true 
