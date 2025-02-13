@@ -35,7 +35,6 @@ async def on_ready():
 if __name__ == "__main__":
     load_dotenv()
 
-    # Get token from environment variable in dev, AWS Secrets Manager in prod
     token = get_secret("discord_token")
 
     setup_commands(bot)
