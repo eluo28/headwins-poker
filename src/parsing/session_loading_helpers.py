@@ -41,7 +41,9 @@ def load_sessions(csv_path: Path) -> List[PokerSession]:
             session = PokerSession(
                 player_nickname=row["player_nickname"],
                 player_id=row["player_id"],
-                session_start_at=parse_utc_datetime(row["session_start_at"]),
+                session_start_at=parse_utc_datetime(row["session_start_at"])
+                if row["session_start_at"]
+                else None,
                 session_end_at=parse_utc_datetime(row["session_end_at"])
                 if row["session_end_at"]
                 else None,
