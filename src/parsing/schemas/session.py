@@ -7,7 +7,7 @@ from pydantic import BaseModel
 class PokerSession(BaseModel):
     player_nickname: str
     player_id: str
-    session_start_at: datetime | None = None
+    session_start_at: datetime
     session_end_at: datetime | None = None
     buy_in_dollars: Decimal
     buy_out_dollars: Decimal | None = None

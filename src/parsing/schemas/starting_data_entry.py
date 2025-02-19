@@ -5,6 +5,6 @@ from pydantic import BaseModel
 
 
 class StartingDataEntry(BaseModel):
-    player_name: str
+    player_name_lowercase: str
     net_dollars: Decimal
     date: date

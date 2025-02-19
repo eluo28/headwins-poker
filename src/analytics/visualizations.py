@@ -3,9 +3,11 @@ from typing import List
 
 import pandas as pd
 import plotly.express as px
-import pytz
 
-from src.parsing.player_mapping import PLAYER_ID_TO_NAME, PLAYER_NICKNAME_TO_NAME
+from src.parsing.player_mapping import (
+    PLAYER_ID_TO_LOWERCASE_NAME,
+    PLAYER_NICKNAME_TO_LOWERCASE_NAME,
+)
 from src.parsing.schemas.session import PokerSession
 from src.parsing.schemas.starting_data_entry import StartingDataEntry
 
@@ -17,15 +19,13 @@ def get_file_object_of_player_nets_over_time(
     df = pd.DataFrame(
         [
             {
-                "player": PLAYER_ID_TO_NAME.get(
+                "player": PLAYER_ID_TO_LOWERCASE_NAME.get(
                     session.player_id,
-                    PLAYER_NICKNAME_TO_NAME.get(
+                    PLAYER_NICKNAME_TO_LOWERCASE_NAME.get(
                         session.player_nickname, session.player_nickname
                     ),
                 ),  # Fallback to ID if not mapped
-                "date": session.session_start_at.astimezone(
-                    pytz.timezone("US/Pacific")
-                ).date(),
+                "date": session.session_start_at.date(),
                 "net": session.net_dollars,
             }
             for session in sessions
@@ -36,7 +36,7 @@ def get_file_object_of_player_nets_over_time(
     starting_df = pd.DataFrame(
         [
             {
-                "player": entry.player_name,
+                "player": entry.player_name_lowercase,
                 "date": entry.date,
                 "net": entry.net_dollars,
             }
