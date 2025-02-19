@@ -1,4 +1,3 @@
-import asyncio
 from logging import getLogger
 
 import discord
@@ -19,9 +18,6 @@ async def graph_all_player_nets(interaction: discord.Interaction):
     try:
         # Defer with a loading state
         await interaction.response.defer(thinking=True, ephemeral=False)
-
-        # Add a small delay to ensure defer is processed
-        await asyncio.sleep(1)
 
         logger.info("Loading sessions and starting data")
         all_sessions = load_all_sessions(LEDGERS_DIR)
