@@ -18,6 +18,8 @@ logger = getLogger(__name__)
 def get_file_object_of_player_nets_over_time(
     sessions: List[PokerSession], starting_data: List[StartingDataEntry]
 ) -> BytesIO:
+    if not sessions and not starting_data:
+        raise ValueError("No sessions or starting data found")
     # Convert sessions to DataFrame with mapped names
     df = pd.DataFrame(
         [

@@ -16,11 +16,23 @@ logger = getLogger(__name__)
     description="Generates a graph showing all players' net profits over time",
 )
 async def graph_all_player_nets(interaction: discord.Interaction):
+    logger.info(f"Graphing all player nets for guild {interaction.guild_id}")
     try:
-        await interaction.response.defer(thinking=True)  # Shows "Bot is thinking..."
+        await interaction.response.defer(thinking=True)
+        logger.info(f"Loading all ledger sessions for guild {interaction.guild_id}")
 
         all_sessions = load_all_ledger_sessions(str(interaction.guild_id))
+        logger.info(f"Loaded {len(all_sessions)} ledger sessions")
+
         starting_data = load_starting_data(str(interaction.guild_id))
+        logger.info(f"Loaded {len(starting_data)} starting data entries")
+
+        if not all_sessions and not starting_data:
+            await interaction.followup.send(
+                "No sessions or starting data found", ephemeral=True
+            )
+            return
+
         file_object = get_file_object_of_player_nets_over_time(
             all_sessions, starting_data
         )
