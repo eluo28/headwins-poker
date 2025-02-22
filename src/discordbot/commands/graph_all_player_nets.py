@@ -3,7 +3,6 @@ from logging import getLogger
 import discord
 
 from src.analytics.visualizations import get_file_object_of_player_nets_over_time
-from src.config import STARTING_DATA_PATH
 from src.parsing.session_loading_helpers import (
     load_all_ledger_sessions,
     load_starting_data,
@@ -21,7 +20,7 @@ async def graph_all_player_nets(interaction: discord.Interaction):
         await interaction.response.defer(thinking=True)  # Shows "Bot is thinking..."
 
         all_sessions = load_all_ledger_sessions(str(interaction.guild_id))
-        starting_data = load_starting_data(STARTING_DATA_PATH)
+        starting_data = load_starting_data(str(interaction.guild_id))
         file_object = get_file_object_of_player_nets_over_time(
             all_sessions, starting_data
         )

@@ -86,19 +86,39 @@ def load_sessions(csv_file: StringIO) -> List[PokerSession]:
     return sessions
 
 
-def load_starting_data(csv_path: str | Path) -> List[StartingDataEntry]:
+def load_starting_data(guild_id: str) -> List[StartingDataEntry]:
     """
-    Load starting balances from CSV file
+    Load starting balances from CSV file in S3
 
     Args:
-        csv_path: Path to the starting data CSV file
+        guild_id: Discord guild ID to load starting data for
 
     Returns:
         List of StartingDataEntry objects containing player starting balances
     """
+    s3 = boto3.client("s3")
+    bucket_name = AWSConfig.BUCKET_NAME
+    prefix = f"uploads/{guild_id}/starting_data/"
+
     starting_data: List[StartingDataEntry] = []
-    with open(csv_path) as f:
-        for line in f:
+    try:
+        # Get the most recent starting data file
+        response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
+        if "Contents" not in response:
+            logger.warning(f"No starting data found for guild {guild_id}")
+            return starting_data
+
+        # Sort by last modified and get the most recent file
+        latest_file = sorted(
+            response["Contents"], key=lambda x: x["LastModified"], reverse=True
+        )[0]
+
+        # Get the file content
+        file_obj = s3.get_object(Bucket=bucket_name, Key=latest_file["Key"])
+        file_content = file_obj["Body"].read().decode("utf-8")
+
+        # Parse each line
+        for line in file_content.strip().split("\n"):
             name, net, date_str = line.strip().split(",")
             entry = StartingDataEntry(
                 player_name_lowercase=name.lower(),
@@ -106,6 +126,10 @@ def load_starting_data(csv_path: str | Path) -> List[StartingDataEntry]:
                 date=date.fromisoformat(date_str),
             )
             starting_data.append(entry)
+
+    except Exception as e:
+        logger.error(f"Error loading starting data from S3: {e}")
+        raise
 
     return starting_data
 
