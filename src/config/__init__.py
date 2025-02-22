@@ -1,0 +1,1 @@
+STARTING_DATA_PATH: str = "src/pokernowdata/starting_data.csv"

@@ -1,4 +1,5 @@
 from io import BytesIO
+from logging import getLogger
 from typing import List
 
 import pandas as pd
@@ -11,6 +12,8 @@ from src.parsing.player_mapping import (
 from src.parsing.schemas.session import PokerSession
 from src.parsing.schemas.starting_data_entry import StartingDataEntry
 
+logger = getLogger(__name__)
+
 
 def get_file_object_of_player_nets_over_time(
     sessions: List[PokerSession], starting_data: List[StartingDataEntry]
@@ -22,9 +25,10 @@ def get_file_object_of_player_nets_over_time(
                 "player": PLAYER_ID_TO_LOWERCASE_NAME.get(
                     session.player_id,
                     PLAYER_NICKNAME_TO_LOWERCASE_NAME.get(
-                        session.player_nickname, session.player_nickname
+                        session.player_nickname_lowercase,
+                        session.player_nickname_lowercase,
                     ),
-                ),  # Fallback to ID if not mapped
+                ),
                 "date": session.session_start_at.date(),
                 "net": session.net_dollars,
             }

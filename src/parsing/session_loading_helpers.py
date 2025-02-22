@@ -1,12 +1,18 @@
 import csv
-import os
 from datetime import date, datetime
 from decimal import Decimal
+from io import StringIO
+from logging import getLogger
 from pathlib import Path
 from typing import List
 
+import boto3
+
+from src.config.aws_config import AWSConfig
 from src.parsing.schemas.session import PokerSession
 from src.parsing.schemas.starting_data_entry import StartingDataEntry
+
+logger = getLogger(__name__)
 
 
 def parse_utc_datetime(dt_str: str) -> datetime:
@@ -19,25 +25,21 @@ def cents_to_dollars(cents: str) -> Decimal:
     return Decimal(cents) / 100
 
 
-def load_sessions(csv_path: Path) -> List[PokerSession]:
+def load_sessions(csv_file: StringIO) -> List[PokerSession]:
     """
-    Load poker sessions from a CSV file into a list of PokerSession models
+    Load poker sessions from a CSV file or StringIO into a list of PokerSession models
 
     Args:
-        csv_path: Path to the CSV file containing poker session data
+        csv_path: Path to CSV file or StringIO containing CSV data
 
     Returns:
         List of PokerSession objects
     """
-    csv_path = Path(csv_path)
-    if not csv_path.exists():
-        raise FileNotFoundError(f"CSV file not found at {csv_path}")
-
     # First pass: read all rows into memory
     rows = []
-    with csv_path.open("r") as f:
-        reader = csv.DictReader(f)
-        rows = list(reader)
+
+    reader = csv.DictReader(csv_file)
+    rows = list(reader)
 
     sessions: List[PokerSession] = []
 
@@ -66,7 +68,7 @@ def load_sessions(csv_path: Path) -> List[PokerSession]:
             raise ValueError(f"No start time found for row {i}")
 
         session = PokerSession(
-            player_nickname=row["player_nickname"].lower(),
+            player_nickname_lowercase=row["player_nickname"].lower(),
             player_id=row["player_id"],
             session_start_at=start_time,
             session_end_at=parse_utc_datetime(row["session_end_at"])
@@ -108,28 +110,56 @@ def load_starting_data(csv_path: str | Path) -> List[StartingDataEntry]:
     return starting_data
 
 
-def get_csv_files_from_directory(directory: str) -> list[Path]:
-    csv_files: list[Path] = []
-    for filename in os.listdir(directory):
-        if filename.endswith(".csv"):
-            filepath = os.path.join(directory, filename)
-            csv_files.append(Path(filepath))
+def get_ledger_csv_paths_and_contents_from_s3_for_guild(
+    guild_id: str,
+) -> list[tuple[Path, StringIO]]:
+    """
+    Gets paths and contents of ledger CSV files from S3 for a guild.
+
+    Args:
+        guild_id: Discord guild ID to get files for
+
+    Returns:
+        List of tuples containing (Path, StringIO) for each CSV file
+    """
+    s3 = boto3.client("s3")
+    bucket_name = AWSConfig.BUCKET_NAME
+    prefix = AWSConfig.LEDGER_PREFIX.format(guild_id=guild_id)
+
+    csv_files: list[tuple[Path, StringIO]] = []
+    try:
+        response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
+        if "Contents" in response:
+            for obj in response["Contents"]:
+                if obj["Key"].endswith(".csv"):
+                    # Get the object from S3
+                    file_obj = s3.get_object(Bucket=bucket_name, Key=obj["Key"])
+                    # Read the file content
+                    file_content = file_obj["Body"].read().decode("utf-8")
+                    # Create a StringIO object
+                    csv_file = StringIO(file_content)
+                    csv_files.append((Path(obj["Key"]), csv_file))
+    except Exception as e:
+        logger.error(f"Error accessing S3: {e}")
+        raise
+
     return csv_files
 
 
-def load_all_sessions(ledgers_dir: str) -> List[PokerSession]:
+def load_all_ledger_sessions(guild_id: str) -> List[PokerSession]:
     """
-    Loads and combines all poker sessions from CSV files in a directory.
+    Loads and combines all poker sessions from CSV files in S3.
 
     Args:
-        ledgers_dir: Directory path containing session CSV files
+        guild_id: Discord guild ID to load sessions for
 
     Returns:
         List of all sessions combined
     """
     all_sessions: List[PokerSession] = []
-    filepaths = get_csv_files_from_directory(ledgers_dir)
-    for filepath in filepaths:
-        sessions = load_sessions(Path(filepath))
+
+    for _, csv_file in get_ledger_csv_paths_and_contents_from_s3_for_guild(guild_id):
+        sessions = load_sessions(csv_file)
         all_sessions.extend(sessions)
+
     return all_sessions

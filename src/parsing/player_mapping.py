@@ -19,7 +19,7 @@ PLAYER_MAPPING = {
     "Dan": {"played_ids": ["ArJnWs8BqK"], "played_nicknames": ["the senate"]},
     "Addison": {"played_ids": ["YRv7Vh3JH0"], "played_nicknames": []},
     "Chris": {"played_ids": [], "played_nicknames": ["kris", "CF"]},
-    "Eli": {"played_ids": [], "played_nicknames": ["Egan"]},
+    "Eli": {"played_ids": [], "played_nicknames": ["Egan", "egan konopinsk"]},
 }
 
 PLAYER_ID_TO_LOWERCASE_NAME = {
@@ -29,7 +29,7 @@ PLAYER_ID_TO_LOWERCASE_NAME = {
     for player_id in played_id.split(",")
 }
 PLAYER_NICKNAME_TO_LOWERCASE_NAME = {
-    nickname.strip(): name.lower()
+    nickname.lower().strip(): name.lower()
     for name, data in PLAYER_MAPPING.items()
     for played_nickname in data["played_nicknames"]
     for nickname in played_nickname.split(",")
