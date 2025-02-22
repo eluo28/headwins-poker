@@ -10,6 +10,7 @@ env:
   ECS_SERVICE: headwins-poker-service
   ECS_CLUSTER: headwins-poker
   CONTAINER_NAME: headwins-poker
+  IMAGES_TO_KEEP: 3  # Keep latest N images
 
 jobs:
   deploy:
@@ -49,4 +50,32 @@ jobs:
         service: ${{ env.ECS_SERVICE }}
         cluster: ${{ env.ECS_CLUSTER }}
         desired-count: 1
-        wait-for-service-stability: true 
+        wait-for-service-stability: true
+
+    - name: Clean up old images
+      if: success()  # Only run if deployment succeeded
+      run: |
+        # List images and keep only the N most recent
+        IMAGES_TO_DELETE=$(aws ecr list-images \
+          --repository-name $ECR_REPOSITORY \
+          --query 'imageIds[?type(imageTag)!=`string`].[imageDigest]' \
+          --output text)
+        
+        if [ ! -z "$IMAGES_TO_DELETE" ]; then
+          aws ecr batch-delete-image \
+            --repository-name $ECR_REPOSITORY \
+            --image-ids "$(echo "$IMAGES_TO_DELETE" | sed 's/\([^ ]*\)/imageDigest=\1/g')" || true
+        fi
+        
+        # Delete all untagged images
+        UNTAGGED_IMAGES=$(aws ecr list-images \
+          --repository-name $ECR_REPOSITORY \
+          --filter tagStatus=UNTAGGED \
+          --query 'imageIds[*]' \
+          --output json)
+        
+        if [ "$UNTAGGED_IMAGES" != "[]" ]; then
+          aws ecr batch-delete-image \
+            --repository-name $ECR_REPOSITORY \
+            --image-ids "$UNTAGGED_IMAGES" || true
+        fi 
