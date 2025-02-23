@@ -42,3 +42,7 @@ reportUnknownMemberType = "none"
 reportUnknownParameterType = "none"
 reportUnknownLambdaType = "none"
 reportUnknownVariableType = "none"
+
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"

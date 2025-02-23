@@ -5,10 +5,7 @@ from discord import app_commands
 from discord.ext import commands
 
 from src.analytics.visualizations import get_file_object_of_player_nets_over_time
-from src.parsing.session_loading_helpers import (
-    load_all_ledger_sessions,
-    load_starting_data,
-)
+from src.parsing.session_loading_helpers import load_all_ledger_sessions
 
 logger = getLogger(__name__)
 
