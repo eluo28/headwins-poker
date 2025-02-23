@@ -5,6 +5,7 @@ from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
 
+from config.discord_config import DiscordConfig
 from src.get_secret import get_secret
 
 logger = logging.getLogger(__name__)
@@ -28,7 +29,8 @@ async def on_app_command_error(
     if isinstance(error, app_commands.CheckFailure):
         logger.error(f"Permission check failed: {error}")
         await interaction.response.send_message(
-            "You don't have permission to use this command.", ephemeral=True
+            f"You must have role {DiscordConfig.HEADWINSPOKER_ADMIN_ROLE_NAME} to use this command.",
+            ephemeral=True,
         )
     else:
         logger.error(f"Unexpected error in command: {error}")

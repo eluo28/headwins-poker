@@ -4,6 +4,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+from config.discord_config import DiscordConfig
 from src.discordbot.helpers.validation_helpers import validate_starting_data_file
 from src.discordbot.services.s3_service import S3Service
 
@@ -70,7 +71,7 @@ class StartingDataCommands(commands.Cog):
         name="delete_starting_data",
         description="Delete a starting data CSV file",
     )
-    @app_commands.checks.has_role("headwins_admin")
+    @app_commands.checks.has_role(DiscordConfig.HEADWINSPOKER_ADMIN_ROLE_NAME)
     async def delete_starting_data(
         self,
         interaction: discord.Interaction,

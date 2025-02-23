@@ -4,6 +4,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+from config.discord_config import DiscordConfig
 from src.discordbot.helpers.validation_helpers import validate_csv_files
 from src.discordbot.services.s3_service import S3Service
 
@@ -91,7 +92,7 @@ class LedgerAndLogCommands(commands.Cog):
         name="delete_ledger_file",
         description="Delete a specific ledger CSV file",
     )
-    @app_commands.checks.has_role("headwins_admin")
+    @app_commands.checks.has_role(DiscordConfig.HEADWINSPOKER_ADMIN_ROLE_NAME)
     async def delete_ledger_file(
         self,
         interaction: discord.Interaction,
@@ -128,7 +129,7 @@ class LedgerAndLogCommands(commands.Cog):
         name="delete_log_file",
         description="Delete a specific log CSV file",
     )
-    @app_commands.checks.has_role("headwins_admin")
+    @app_commands.checks.has_role(DiscordConfig.HEADWINSPOKER_ADMIN_ROLE_NAME)
     async def delete_log_file(
         self,
         interaction: discord.Interaction,
