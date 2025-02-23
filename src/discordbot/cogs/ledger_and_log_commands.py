@@ -91,6 +91,7 @@ class LedgerAndLogCommands(commands.Cog):
         name="delete_ledger_file",
         description="Delete a specific ledger CSV file",
     )
+    @app_commands.checks.has_role("headwins_admin")
     async def delete_ledger_file(
         self,
         interaction: discord.Interaction,
