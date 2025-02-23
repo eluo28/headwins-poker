@@ -11,6 +11,7 @@ env:
   ECS_CLUSTER: headwins-poker
   CONTAINER_NAME: headwins-poker
   NUMBER_OF_IMAGES_TO_KEEP: 3  # Keep latest N images
+  TASK_DEFINITION_FILE: headwins-poker-task.json
 
 jobs:
   deploy:
@@ -46,7 +47,7 @@ jobs:
     - name: Update ECS service
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
       with:
-        task-definition: headwins-poker-task.json
+        task-definition: ${{ env.TASK_DEFINITION_FILE }}
         service: ${{ env.ECS_SERVICE }}
         cluster: ${{ env.ECS_CLUSTER }}
         desired-count: 1
