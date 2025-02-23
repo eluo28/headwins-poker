@@ -30,7 +30,7 @@ pyright = "^1.1.393"
 ruff = "^0.9.4"
 
 [tool.pyright]
-include = ["headwins_poker"]
+include = ["src"]
 exclude = ["**/__pycache__"]
 pythonVersion = "3.12"
 typeCheckingMode = "strict"
