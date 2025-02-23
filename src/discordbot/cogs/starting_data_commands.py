@@ -80,26 +80,6 @@ class StartingDataCommands(commands.Cog):
             f"Deleting starting data file {filename} for guild {interaction.guild_id}"
         )
         try:
-            # Check bot permissions
-            if (
-                interaction.guild
-                and not interaction.guild.me.guild_permissions.view_guild_insights
-            ):
-                await interaction.response.send_message(
-                    "Bot is missing required permissions. Please ensure the bot has the 'View Server Members' permission.",
-                    ephemeral=True,
-                )
-                return
-
-            # Check user role
-            if isinstance(interaction.user, discord.Member) and not any(
-                role.name == "headwins_admin" for role in interaction.user.roles
-            ):
-                await interaction.response.send_message(
-                    "You don't have permission to use this command.", ephemeral=True
-                )
-                return
-
             await interaction.response.defer(thinking=True)
             logger.info(
                 f"Deleting starting data file {filename} for guild {interaction.guild_id}"
