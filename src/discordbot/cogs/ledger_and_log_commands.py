@@ -50,7 +50,7 @@ class LedgerAndLogCommands(commands.Cog):
 
     @app_commands.command(
         name="list_ledger_files",
-        description="List all ledger CSV files that have been uploaded",
+        description="List last 10 ledger CSV files that have been uploaded, ordered by last modified date",
     )
     async def list_ledger_files(self, interaction: discord.Interaction):
         try:
@@ -58,7 +58,7 @@ class LedgerAndLogCommands(commands.Cog):
             logger.info(f"Listing ledger files for guild {interaction.guild_id}")
 
             files, message = await self.s3_service.list_files(
-                str(interaction.guild_id), "ledgers"
+                str(interaction.guild_id), "ledgers", limit=10
             )
             await interaction.followup.send(message, ephemeral=len(files) == 0)
 
@@ -70,7 +70,7 @@ class LedgerAndLogCommands(commands.Cog):
 
     @app_commands.command(
         name="list_log_files",
-        description="List all log CSV files that have been uploaded",
+        description="List last 10 log CSV files that have been uploaded, ordered by last modified date",
     )
     async def list_log_files(self, interaction: discord.Interaction):
         try:
@@ -78,7 +78,7 @@ class LedgerAndLogCommands(commands.Cog):
             logger.info(f"Listing log files for guild {interaction.guild_id}")
 
             files, message = await self.s3_service.list_files(
-                str(interaction.guild_id), "logs"
+                str(interaction.guild_id), "logs", limit=10
             )
             await interaction.followup.send(message, ephemeral=len(files) == 0)
 

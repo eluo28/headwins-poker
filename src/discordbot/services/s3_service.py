@@ -22,10 +22,14 @@ class S3Service:
         return f"uploads/{guild_id}/{file_type}/"
 
     async def list_files(
-        self, guild_id: str, file_type: FileType
+        self, guild_id: str, file_type: FileType, limit: int | None = None
     ) -> tuple[list[str], str]:
         """
-        List all files of a specific type in S3 for a guild.
+        List files of a specific type in S3 for a guild.
+        Args:
+            guild_id: The Discord guild ID
+            file_type: Type of files to list
+            limit: Maximum number of files to return, ordered by last modified date. If None, returns all files.
         Returns (list of filenames, message)
         """
         try:
@@ -50,6 +54,10 @@ class S3Service:
 
             if not files:
                 return [], f"No {file_type} files found"
+
+            # Apply limit if specified
+            if limit is not None:
+                files = files[:limit]
 
             file_list = [
                 f"{i + 1}. {f['name']} (modified: {f['modified'].strftime('%Y-%m-%d %H:%M:%S')})"

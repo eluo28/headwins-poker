@@ -49,7 +49,7 @@ class StartingDataCommands(commands.Cog):
 
     @app_commands.command(
         name="list_starting_data",
-        description="List all starting data CSV files that have been uploaded",
+        description="List last 10 starting data CSV files that have been uploaded, ordered by last modified date",
     )
     async def list_starting_data(self, interaction: discord.Interaction):
         try:
@@ -57,7 +57,7 @@ class StartingDataCommands(commands.Cog):
             logger.info(f"Listing starting data files for guild {interaction.guild_id}")
 
             files, message = await self.s3_service.list_files(
-                str(interaction.guild_id), "starting_data"
+                str(interaction.guild_id), "starting_data", limit=10
             )
             await interaction.followup.send(message, ephemeral=len(files) == 0)
 
