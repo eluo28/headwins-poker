@@ -1,6 +1,7 @@
 import logging
 
 import discord
+from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
 
@@ -11,13 +12,29 @@ logger = logging.getLogger(__name__)
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
-bot = commands.Bot(command_prefix="/", intents=intents)
+bot = commands.Bot(command_prefix="!", intents=intents)
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     force=True,
 )
+
+
+@bot.tree.error
+async def on_app_command_error(
+    interaction: discord.Interaction, error: app_commands.AppCommandError
+):
+    if isinstance(error, app_commands.CheckFailure):
+        logger.error(f"Permission check failed: {error}")
+        await interaction.response.send_message(
+            "You don't have permission to use this command.", ephemeral=True
+        )
+    else:
+        logger.error(f"Unexpected error in command: {error}")
+        await interaction.response.send_message(
+            "An error occurred while processing the command.", ephemeral=True
+        )
 
 
 @bot.event
