@@ -4,21 +4,16 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from src.discordbot.helpers.s3_helpers import (
-    delete_ledger_file,
-    delete_log_file,
-    list_ledger_files,
-    list_log_files,
-    upload_ledger_and_log_to_s3,
-)
 from src.discordbot.helpers.validation_helpers import validate_csv_files
+from src.discordbot.services.s3_service import S3Service
 
 logger = getLogger(__name__)
 
 
 class LedgerAndLogCommands(commands.Cog):
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: commands.Bot, s3_service: S3Service):
         self.bot = bot
+        self.s3_service = s3_service
 
     @app_commands.command(
         name="upload_ledger_and_log_csv",
@@ -41,7 +36,7 @@ class LedgerAndLogCommands(commands.Cog):
                 await interaction.followup.send(validation_result, ephemeral=True)
                 return
 
-            uploaded_files, message = await upload_ledger_and_log_to_s3(
+            uploaded_files, message = await self.s3_service.upload_ledger_and_log(
                 ledger_file, log_file, str(interaction.guild_id)
             )
             await interaction.followup.send(message, ephemeral=len(uploaded_files) == 0)
@@ -61,7 +56,9 @@ class LedgerAndLogCommands(commands.Cog):
             await interaction.response.defer(thinking=True)
             logger.info(f"Listing ledger files for guild {interaction.guild_id}")
 
-            files, message = await list_ledger_files(str(interaction.guild_id))
+            files, message = await self.s3_service.list_files(
+                str(interaction.guild_id), "ledgers"
+            )
             await interaction.followup.send(message, ephemeral=len(files) == 0)
 
         except Exception as e:
@@ -79,7 +76,9 @@ class LedgerAndLogCommands(commands.Cog):
             await interaction.response.defer(thinking=True)
             logger.info(f"Listing log files for guild {interaction.guild_id}")
 
-            files, message = await list_log_files(str(interaction.guild_id))
+            files, message = await self.s3_service.list_files(
+                str(interaction.guild_id), "logs"
+            )
             await interaction.followup.send(message, ephemeral=len(files) == 0)
 
         except Exception as e:
@@ -103,7 +102,9 @@ class LedgerAndLogCommands(commands.Cog):
                 f"Deleting ledger file {filename} for guild {interaction.guild_id}"
             )
 
-            files, _ = await list_ledger_files(str(interaction.guild_id))
+            files, _ = await self.s3_service.list_files(
+                str(interaction.guild_id), "ledgers"
+            )
             if filename not in files:
                 await interaction.followup.send(
                     f"File '{filename}' not found in ledger files.",
@@ -111,8 +112,8 @@ class LedgerAndLogCommands(commands.Cog):
                 )
                 return
 
-            success, message = await delete_ledger_file(
-                str(interaction.guild_id), filename
+            success, message = await self.s3_service.delete_file(
+                str(interaction.guild_id), filename, "ledgers"
             )
             await interaction.followup.send(message, ephemeral=not success)
 
@@ -137,7 +138,9 @@ class LedgerAndLogCommands(commands.Cog):
                 f"Deleting log file {filename} for guild {interaction.guild_id}"
             )
 
-            files, _ = await list_log_files(str(interaction.guild_id))
+            files, _ = await self.s3_service.list_files(
+                str(interaction.guild_id), "logs"
+            )
             if filename not in files:
                 await interaction.followup.send(
                     f"File '{filename}' not found in log files.",
@@ -145,8 +148,8 @@ class LedgerAndLogCommands(commands.Cog):
                 )
                 return
 
-            success, message = await delete_log_file(
-                str(interaction.guild_id), filename
+            success, message = await self.s3_service.delete_file(
+                str(interaction.guild_id), filename, "logs"
             )
             await interaction.followup.send(message, ephemeral=not success)
 
@@ -158,4 +161,4 @@ class LedgerAndLogCommands(commands.Cog):
 
 
 async def setup(bot: commands.Bot):
-    await bot.add_cog(LedgerAndLogCommands(bot))
+    await bot.add_cog(LedgerAndLogCommands(bot, S3Service()))

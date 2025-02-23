@@ -13,7 +13,7 @@ from src.parsing.session_loading_helpers import (
 logger = getLogger(__name__)
 
 
-class Graph(commands.Cog):
+class GraphCommands(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
@@ -60,4 +60,4 @@ class Graph(commands.Cog):
 
 
 async def setup(bot: commands.Bot):
-    await bot.add_cog(Graph(bot))
+    await bot.add_cog(GraphCommands(bot))

@@ -27,9 +27,9 @@ async def on_ready():
     )
 
     # Load cogs and sync commands after bot is ready
-    await bot.load_extension("src.discordbot.cogs.graph")
-    await bot.load_extension("src.discordbot.cogs.ledger_and_log")
-    await bot.load_extension("src.discordbot.cogs.starting_data")
+    await bot.load_extension("src.discordbot.cogs.graph_commands")
+    await bot.load_extension("src.discordbot.cogs.ledger_and_log_commands")
+    await bot.load_extension("src.discordbot.cogs.starting_data_commands")
     await bot.tree.sync()
 
     logger.info("Cogs loaded and commands synced")

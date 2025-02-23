@@ -4,19 +4,16 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from src.discordbot.helpers.s3_helpers import (
-    delete_starting_data_file,
-    list_starting_data_files,
-    upload_starting_data_to_s3,
-)
 from src.discordbot.helpers.validation_helpers import validate_starting_data_file
+from src.discordbot.services.s3_service import S3Service
 
 logger = getLogger(__name__)
 
 
 class StartingDataCommands(commands.Cog):
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: commands.Bot, s3_service: S3Service):
         self.bot = bot
+        self.s3_service = s3_service
 
     @app_commands.command(
         name="upload_starting_data",
@@ -38,7 +35,7 @@ class StartingDataCommands(commands.Cog):
                 await interaction.followup.send(validation_result, ephemeral=True)
                 return
 
-            success, message = await upload_starting_data_to_s3(
+            success, message = await self.s3_service.upload_starting_data(
                 starting_data_file, str(interaction.guild_id)
             )
             await interaction.followup.send(message, ephemeral=not success)
@@ -58,7 +55,9 @@ class StartingDataCommands(commands.Cog):
             await interaction.response.defer(thinking=True)
             logger.info(f"Listing starting data files for guild {interaction.guild_id}")
 
-            files, message = await list_starting_data_files(str(interaction.guild_id))
+            files, message = await self.s3_service.list_files(
+                str(interaction.guild_id), "starting_data"
+            )
             await interaction.followup.send(message, ephemeral=len(files) == 0)
 
         except Exception as e:
@@ -83,7 +82,9 @@ class StartingDataCommands(commands.Cog):
             )
 
             # First check if file exists
-            files, _ = await list_starting_data_files(str(interaction.guild_id))
+            files, _ = await self.s3_service.list_files(
+                str(interaction.guild_id), "starting_data"
+            )
             if filename not in files:
                 await interaction.followup.send(
                     f"File '{filename}' not found in starting data files.",
@@ -91,8 +92,8 @@ class StartingDataCommands(commands.Cog):
                 )
                 return
 
-            success, message = await delete_starting_data_file(
-                str(interaction.guild_id), filename
+            success, message = await self.s3_service.delete_file(
+                str(interaction.guild_id), filename, "starting_data"
             )
             await interaction.followup.send(message, ephemeral=not success)
 
@@ -104,4 +105,4 @@ class StartingDataCommands(commands.Cog):
 
 
 async def setup(bot: commands.Bot):
-    await bot.add_cog(StartingDataCommands(bot))
+    await bot.add_cog(StartingDataCommands(bot, S3Service()))
