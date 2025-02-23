@@ -70,7 +70,7 @@ class StartingDataCommands(commands.Cog):
         name="delete_starting_data",
         description="Delete a specific starting data CSV file",
     )
-    @app_commands.checks.has_role("headwins_admin")
+    @commands.has_role("headwins_admin")
     async def delete_starting_data(
         self,
         interaction: discord.Interaction,
