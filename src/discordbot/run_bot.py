@@ -4,8 +4,9 @@ import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 
-from src.discordbot.commands.setup_commands import setup_commands
 from src.get_secret import get_secret
+
+logger = logging.getLogger(__name__)
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -18,22 +19,23 @@ logging.basicConfig(
     force=True,
 )
 
-logger = logging.getLogger(__name__)
-
 
 @bot.event
 async def on_ready():
     logger.info(
         f"Logged in as {bot.user} (ID: {bot.user.id if bot.user else 'unknown'})"
     )
+
+    # Load cogs and sync commands after bot is ready
+    await bot.load_extension("src.discordbot.cogs.graph")
+    await bot.load_extension("src.discordbot.cogs.upload")
+    await bot.tree.sync()
+
+    logger.info("Cogs loaded and commands synced")
     logger.info("------")
 
 
 if __name__ == "__main__":
     load_dotenv()
-
     token = get_secret("discord_token")
-
-    setup_commands(bot)
-
     bot.run(token)
