@@ -5,7 +5,7 @@ from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
 
-from config.discord_config import DiscordConfig
+from src.config.discord_config import DiscordConfig
 from src.get_secret import get_secret
 
 logger = logging.getLogger(__name__)
