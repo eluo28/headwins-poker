@@ -19,4 +19,4 @@ RUN poetry config virtualenvs.create false \
     && poetry install --no-interaction --no-ansi
 
 # Run the bot
-CMD ["poetry", "run", "python", "src/discordbot/run_bot.py"]
+CMD ["poetry", "run", "python", "-m", "src.discordbot.run_bot"]

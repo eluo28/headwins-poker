@@ -4,11 +4,11 @@ from logging import getLogger
 import pandas as pd
 import plotly.express as px
 
-from parsing.schemas.session import PokerSession
 from src.parsing.player_mapping import (
     PLAYER_ID_TO_LOWERCASE_NAME,
     PLAYER_NICKNAME_TO_LOWERCASE_NAME,
 )
+from src.parsing.schemas.session import PokerSession
 from src.parsing.schemas.starting_data_entry import StartingDataEntry
 
 logger = getLogger(__name__)

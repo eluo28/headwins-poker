@@ -21,6 +21,7 @@ boto3 = "^1.36.19"
 
 
 [tool.ruff]
+target-version = "py312"
 line-length = 120
 
 [tool.ruff.lint]
