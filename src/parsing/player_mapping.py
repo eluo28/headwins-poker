@@ -20,6 +20,8 @@ PLAYER_MAPPING = {
     "Addison": {"played_ids": ["YRv7Vh3JH0"], "played_nicknames": []},
     "Chris": {"played_ids": [], "played_nicknames": ["kris", "CF"]},
     "Eli": {"played_ids": [], "played_nicknames": ["Egan", "egan konopinsk"]},
+    "Jun": {"played_ids": [], "played_nicknames": ["jun","dhun"]},
+    "Kyle": {"played_ids": [], "played_nicknames": ["kyle", "kyle2"]},
 }
 
 PLAYER_ID_TO_LOWERCASE_NAME = {
