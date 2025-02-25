@@ -1,6 +1,5 @@
 from io import BytesIO
 from logging import getLogger
-from typing import List
 
 import pandas as pd
 import plotly.express as px
@@ -16,7 +15,7 @@ logger = getLogger(__name__)
 
 
 def get_file_object_of_player_nets_over_time(
-    sessions: List[PokerSession], starting_data: List[StartingDataEntry]
+    sessions: list[PokerSession], starting_data: list[StartingDataEntry]
 ) -> BytesIO:
     if not sessions and not starting_data:
         raise ValueError("No sessions or starting data found")
@@ -88,11 +87,10 @@ def get_file_object_of_player_nets_over_time(
             player_nets.index[0],
             max(
                 player_nets.index[-1],  # Use last date if more than 10 days
-                player_nets.index[0]
-                + pd.Timedelta(days=10),  # Ensure at least 10 days shown
+                player_nets.index[0] + pd.Timedelta(days=10),  # Ensure at least 10 days shown
             ),
         ],
-        legend=dict(yanchor="middle", y=0.5, xanchor="left", x=1.02),
+        legend={"yanchor": "middle", "y": 0.5, "xanchor": "left", "x": 1.02},
         height=600,
         width=1000,
     )

@@ -4,7 +4,7 @@ version = "0.1.0"
 description = ""
 authors = []
 packages = [
-    { include = "src" }
+    { include = "src", from = "." }
 ]
 
 [tool.poetry.dependencies]
@@ -20,18 +20,58 @@ pynacl = ">=1.5.0,<2.0.0"
 boto3 = "^1.36.19"
 
 
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+# See https://docs.astral.sh/ruff/rules/ for rule descriptions
+preview = true
+explicit-preview-rules = true
+select = [
+    "A",    # flake8-builtins
+    "ANN",  # flake8-annotations
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "COM",  # flake8-commas
+    "DTZ",  # flake8-datetimez
+    "E",    # Pylint Error
+    "F",    # Pyflakes
+    "FAST", # FastAPI
+    "FURB", # refurb
+    "I",    # isort
+    "ICN",  # flake8-import-conventions
+    "ISC",  # flake8-implicit-str-concat
+    "N",    # pep8-naming
+    "PL",   # Pylint
+    "RUF",  # Ruff-specific rules
+    "T20",  # flake8-print
+    "TID",  # flake8-tidyimports
+    "UP",   # pyupgrade
+    "UP042",  # use StrEnum instead of str, Enum
+]
+ignore = [
+    "ANN001",  # missing-type-function-argument (alr covered by pyright)
+    "ANN202",  # missing-return-type-private-function
+    "ANN401",  # any-type
+    "COM812",  # missing-trailing-comma (conflict with another check)
+    "ISC001",  # implicit-str-concat-in-assert (conflict with another check)
+    "RUF015",  # unnecessary-iterable-allocation-for-first-element
+]
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 
 [tool.poetry.group.dev.dependencies]
-pyright = "^1.1.393"
+pyright = "^1.1.394"
 ruff = "^0.9.4"
 
 [tool.pyright]
 include = ["src"]
-exclude = ["**/__pycache__"]
+exclude = ["**/__pycache__", "**/.pytest_cache"]
 pythonVersion = "3.12"
 typeCheckingMode = "strict"
 
@@ -43,6 +83,3 @@ reportUnknownParameterType = "none"
 reportUnknownLambdaType = "none"
 reportUnknownVariableType = "none"
 
-
-[tool.ruff.lint.flake8-tidy-imports]
-ban-relative-imports = "all"

@@ -23,9 +23,7 @@ logging.basicConfig(
 
 
 @bot.tree.error
-async def on_app_command_error(
-    interaction: discord.Interaction, error: app_commands.AppCommandError
-):
+async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError) -> None:
     if isinstance(error, app_commands.CheckFailure):
         logger.error(f"Permission check failed: {error}")
         await interaction.response.send_message(
@@ -34,16 +32,12 @@ async def on_app_command_error(
         )
     else:
         logger.error(f"Unexpected error in command: {error}")
-        await interaction.response.send_message(
-            "An error occurred while processing the command.", ephemeral=True
-        )
+        await interaction.response.send_message("An error occurred while processing the command.", ephemeral=True)
 
 
 @bot.event
-async def on_ready():
-    logger.info(
-        f"Logged in as {bot.user} (ID: {bot.user.id if bot.user else 'unknown'})"
-    )
+async def on_ready() -> None:
+    logger.info(f"Logged in as {bot.user} (ID: {bot.user.id if bot.user else 'unknown'})")
 
     # Load cogs and sync commands after bot is ready
     await bot.load_extension("src.discordbot.cogs.graph_commands")
@@ -57,7 +51,7 @@ async def on_ready():
 
 @bot.command()
 @commands.has_role(DiscordConfig.HEADWINSPOKER_ADMIN_ROLE_NAME)
-async def reload(ctx: commands.Context[commands.Bot]):
+async def reload(ctx: commands.Context[commands.Bot]) -> None:
     """Reload all cogs and sync commands"""
     try:
         # Reload all extensions

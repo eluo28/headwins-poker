@@ -5,6 +5,8 @@ import discord
 
 logger = getLogger(__name__)
 
+STARTING_DATA_COLUMNS = 3
+
 
 async def validate_starting_data_file(file: discord.Attachment) -> str | None:
     """Validate the starting data CSV file format."""
@@ -18,8 +20,8 @@ async def validate_starting_data_file(file: discord.Attachment) -> str | None:
     # Check each line format
     for i, line in enumerate(lines):
         parts = line.strip().split(",")
-        if len(parts) != 3:
-            return f"Line {i + 1} should have exactly 3 columns: player_name,net_amount,date"
+        if len(parts) != STARTING_DATA_COLUMNS:
+            return f"Line {i + 1} should have exactly {STARTING_DATA_COLUMNS} columns: player_name,net_amount,date"
 
         try:
             # Validate net amount is a number
@@ -38,9 +40,7 @@ async def validate_starting_data_file(file: discord.Attachment) -> str | None:
 
 
 async def validate_ledger_file(ledger_file: discord.Attachment) -> str | None:
-    if not ledger_file.filename.endswith(".csv") or not ledger_file.filename.startswith(
-        "ledger"
-    ):
+    if not ledger_file.filename.endswith(".csv") or not ledger_file.filename.startswith("ledger"):
         return "Please upload a ledger CSV file starting with 'ledger'"
 
     ledger_content = await ledger_file.read()
@@ -49,15 +49,16 @@ async def validate_ledger_file(ledger_file: discord.Attachment) -> str | None:
     expected_headers = "player_nickname,player_id,session_start_at,session_end_at,buy_in,buy_out,stack,net"
 
     if first_line != expected_headers:
-        return "Ledger CSV file must have the following headers: player_nickname,player_id,session_start_at,session_end_at,buy_in,buy_out,stack,net"
+        return (
+            "Ledger CSV file must have the following headers: "
+            "player_nickname,player_id,session_start_at,session_end_at,buy_in,buy_out,stack,net"
+        )
 
     return None
 
 
 async def validate_log_file(log_file: discord.Attachment) -> str | None:
-    if not log_file.filename.endswith(".csv") or not log_file.filename.startswith(
-        "poker_now_log"
-    ):
+    if not log_file.filename.endswith(".csv") or not log_file.filename.startswith("poker_now_log"):
         return "Please upload a log CSV file starting with 'poker_now_log'"
 
     log_content = await log_file.read()
@@ -71,9 +72,7 @@ async def validate_log_file(log_file: discord.Attachment) -> str | None:
     return None
 
 
-async def validate_csv_files(
-    ledger_file: discord.Attachment, log_file: discord.Attachment
-) -> str | None:
+async def validate_csv_files(ledger_file: discord.Attachment, log_file: discord.Attachment) -> str | None:
     ledger_validation = await validate_ledger_file(ledger_file)
     if ledger_validation:
         return ledger_validation

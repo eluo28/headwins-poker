@@ -14,14 +14,14 @@ logger = getLogger(__name__)
 
 
 class GraphCommands(commands.Cog):
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
     @app_commands.command(
         name="graph_all_player_nets",
         description="Generates a graph showing all players' net profits over time",
     )
-    async def graph_all_player_nets(self, interaction: discord.Interaction):
+    async def graph_all_player_nets(self, interaction: discord.Interaction) -> None:
         logger.info(f"Graphing all player nets for guild {interaction.guild_id}")
         try:
             await interaction.response.defer(thinking=True)
@@ -34,17 +34,11 @@ class GraphCommands(commands.Cog):
             logger.info(f"Loaded {len(starting_data)} starting data entries")
 
             if not all_sessions and not starting_data:
-                await interaction.followup.send(
-                    "No sessions or starting data found", ephemeral=True
-                )
+                await interaction.followup.send("No sessions or starting data found", ephemeral=True)
                 return
 
-            file_object = get_file_object_of_player_nets_over_time(
-                all_sessions, starting_data
-            )
-            discord_file = discord.File(
-                file_object, filename="player_nets_over_time.png"
-            )
+            file_object = get_file_object_of_player_nets_over_time(all_sessions, starting_data)
+            discord_file = discord.File(file_object, filename="player_nets_over_time.png")
 
             await interaction.followup.send(file=discord_file)
         except discord.errors.NotFound as e:
@@ -52,12 +46,10 @@ class GraphCommands(commands.Cog):
         except Exception as e:
             logger.error(f"Other error: {e}")
             try:
-                await interaction.followup.send(
-                    f"An error occurred: {str(e)}", ephemeral=True
-                )
+                await interaction.followup.send(f"An error occurred: {e!s}", ephemeral=True)
             except Exception as e:
                 logger.error(f"Could not send error message: {e}")
 
 
-async def setup(bot: commands.Bot):
+async def setup(bot: commands.Bot) -> None:
     await bot.add_cog(GraphCommands(bot))

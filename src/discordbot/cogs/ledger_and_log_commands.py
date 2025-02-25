@@ -4,7 +4,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from config.discord_config import DiscordConfig
+from src.config.discord_config import DiscordConfig
 from src.discordbot.helpers.validation_helpers import validate_csv_files
 from src.discordbot.services.s3_service import S3Service
 
@@ -12,7 +12,7 @@ logger = getLogger(__name__)
 
 
 class LedgerAndLogCommands(commands.Cog):
-    def __init__(self, bot: commands.Bot, s3_service: S3Service):
+    def __init__(self, bot: commands.Bot, s3_service: S3Service) -> None:
         self.bot = bot
         self.s3_service = s3_service
 
@@ -25,12 +25,10 @@ class LedgerAndLogCommands(commands.Cog):
         interaction: discord.Interaction,
         ledger_file: discord.Attachment,
         log_file: discord.Attachment,
-    ):
+    ) -> None:
         try:
             await interaction.response.defer(thinking=True)
-            logger.info(
-                f"Uploading ledger and log CSV files: {ledger_file.filename} and {log_file.filename}"
-            )
+            logger.info(f"Uploading ledger and log CSV files: {ledger_file.filename} and {log_file.filename}")
 
             validation_result = await validate_csv_files(ledger_file, log_file)
             if validation_result:
@@ -44,49 +42,39 @@ class LedgerAndLogCommands(commands.Cog):
 
         except Exception as e:
             logger.error(f"Error in upload_csv: {e}")
-            await interaction.followup.send(
-                "An error occurred while uploading files.", ephemeral=True
-            )
+            await interaction.followup.send("An error occurred while uploading files.", ephemeral=True)
 
     @app_commands.command(
         name="list_ledger_files",
         description="List last 10 ledger CSV files that have been uploaded, ordered by last modified date",
     )
-    async def list_ledger_files(self, interaction: discord.Interaction):
+    async def list_ledger_files(self, interaction: discord.Interaction) -> None:
         try:
             await interaction.response.defer(thinking=True)
             logger.info(f"Listing ledger files for guild {interaction.guild_id}")
 
-            files, message = await self.s3_service.list_files(
-                str(interaction.guild_id), "ledgers", limit=10
-            )
+            files, message = await self.s3_service.list_files(str(interaction.guild_id), "ledgers", limit=10)
             await interaction.followup.send(message, ephemeral=len(files) == 0)
 
         except Exception as e:
             logger.error(f"Error in list_ledger_files: {e}")
-            await interaction.followup.send(
-                "An error occurred while listing files.", ephemeral=True
-            )
+            await interaction.followup.send("An error occurred while listing files.", ephemeral=True)
 
     @app_commands.command(
         name="list_log_files",
         description="List last 10 log CSV files that have been uploaded, ordered by last modified date",
     )
-    async def list_log_files(self, interaction: discord.Interaction):
+    async def list_log_files(self, interaction: discord.Interaction) -> None:
         try:
             await interaction.response.defer(thinking=True)
             logger.info(f"Listing log files for guild {interaction.guild_id}")
 
-            files, message = await self.s3_service.list_files(
-                str(interaction.guild_id), "logs", limit=10
-            )
+            files, message = await self.s3_service.list_files(str(interaction.guild_id), "logs", limit=10)
             await interaction.followup.send(message, ephemeral=len(files) == 0)
 
         except Exception as e:
             logger.error(f"Error in list_log_files: {e}")
-            await interaction.followup.send(
-                "An error occurred while listing files.", ephemeral=True
-            )
+            await interaction.followup.send("An error occurred while listing files.", ephemeral=True)
 
     @app_commands.command(
         name="delete_ledger_file",
@@ -97,16 +85,12 @@ class LedgerAndLogCommands(commands.Cog):
         self,
         interaction: discord.Interaction,
         filename: str,
-    ):
+    ) -> None:
         try:
             await interaction.response.defer(thinking=True)
-            logger.info(
-                f"Deleting ledger file {filename} for guild {interaction.guild_id}"
-            )
+            logger.info(f"Deleting ledger file {filename} for guild {interaction.guild_id}")
 
-            files, _ = await self.s3_service.list_files(
-                str(interaction.guild_id), "ledgers"
-            )
+            files, _ = await self.s3_service.list_files(str(interaction.guild_id), "ledgers")
             if filename not in files:
                 await interaction.followup.send(
                     f"File '{filename}' not found in ledger files.",
@@ -114,16 +98,12 @@ class LedgerAndLogCommands(commands.Cog):
                 )
                 return
 
-            success, message = await self.s3_service.delete_file(
-                str(interaction.guild_id), filename, "ledgers"
-            )
+            success, message = await self.s3_service.delete_file(str(interaction.guild_id), filename, "ledgers")
             await interaction.followup.send(message, ephemeral=not success)
 
         except Exception as e:
             logger.error(f"Error in delete_ledger_file: {e}")
-            await interaction.followup.send(
-                "An error occurred while deleting the file.", ephemeral=True
-            )
+            await interaction.followup.send("An error occurred while deleting the file.", ephemeral=True)
 
     @app_commands.command(
         name="delete_log_file",
@@ -134,16 +114,12 @@ class LedgerAndLogCommands(commands.Cog):
         self,
         interaction: discord.Interaction,
         filename: str,
-    ):
+    ) -> None:
         try:
             await interaction.response.defer(thinking=True)
-            logger.info(
-                f"Deleting log file {filename} for guild {interaction.guild_id}"
-            )
+            logger.info(f"Deleting log file {filename} for guild {interaction.guild_id}")
 
-            files, _ = await self.s3_service.list_files(
-                str(interaction.guild_id), "logs"
-            )
+            files, _ = await self.s3_service.list_files(str(interaction.guild_id), "logs")
             if filename not in files:
                 await interaction.followup.send(
                     f"File '{filename}' not found in log files.",
@@ -151,17 +127,13 @@ class LedgerAndLogCommands(commands.Cog):
                 )
                 return
 
-            success, message = await self.s3_service.delete_file(
-                str(interaction.guild_id), filename, "logs"
-            )
+            success, message = await self.s3_service.delete_file(str(interaction.guild_id), filename, "logs")
             await interaction.followup.send(message, ephemeral=not success)
 
         except Exception as e:
             logger.error(f"Error in delete_log_file: {e}")
-            await interaction.followup.send(
-                "An error occurred while deleting the file.", ephemeral=True
-            )
+            await interaction.followup.send("An error occurred while deleting the file.", ephemeral=True)
 
 
-async def setup(bot: commands.Bot):
+async def setup(bot: commands.Bot) -> None:
     await bot.add_cog(LedgerAndLogCommands(bot, S3Service()))

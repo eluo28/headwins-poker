@@ -13,7 +13,7 @@ FileType = Literal["starting_data", "ledgers", "logs"]
 
 
 class S3Service:
-    def __init__(self):
+    def __init__(self) -> None:
         self.s3_client = boto3.client("s3")
         self.bucket_name: str = AWSConfig.BUCKET_NAME
 
@@ -21,9 +21,7 @@ class S3Service:
         """Get the S3 prefix for a given file type and guild."""
         return f"uploads/{guild_id}/{file_type}/"
 
-    async def list_files(
-        self, guild_id: str, file_type: FileType, limit: int | None = None
-    ) -> tuple[list[str], str]:
+    async def list_files(self, guild_id: str, file_type: FileType, limit: int | None = None) -> tuple[list[str], str]:
         """
         List files of a specific type in S3 for a guild.
         Args:
@@ -34,9 +32,7 @@ class S3Service:
         """
         try:
             prefix = self._get_prefix(guild_id, file_type)
-            response = self.s3_client.list_objects_v2(
-                Bucket=self.bucket_name, Prefix=prefix
-            )
+            response = self.s3_client.list_objects_v2(Bucket=self.bucket_name, Prefix=prefix)
 
             if "Contents" not in response:
                 return [], f"No {file_type} files found"
@@ -71,9 +67,7 @@ class S3Service:
             logger.error(f"Error listing {file_type} files: {e}")
             return [], f"Failed to list {file_type} files"
 
-    async def delete_file(
-        self, guild_id: str, filename: str, file_type: FileType
-    ) -> tuple[bool, str]:
+    async def delete_file(self, guild_id: str, filename: str, file_type: FileType) -> tuple[bool, str]:
         """
         Delete a specific file from S3.
         Returns (success, message)
@@ -125,9 +119,7 @@ class S3Service:
             logger.error(f"Failed to upload {file.filename}: {e}")
             return False, f"Failed to upload {file.filename}"
 
-    async def upload_starting_data(
-        self, starting_data_file: discord.Attachment, guild_id: str
-    ) -> tuple[bool, str]:
+    async def upload_starting_data(self, starting_data_file: discord.Attachment, guild_id: str) -> tuple[bool, str]:
         """
         Upload starting data file to S3.
         Returns (success, message)

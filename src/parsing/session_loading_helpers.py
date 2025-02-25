@@ -4,7 +4,6 @@ from decimal import Decimal
 from io import StringIO
 from logging import getLogger
 from pathlib import Path
-from typing import List
 
 import boto3
 
@@ -25,7 +24,7 @@ def cents_to_dollars(cents: str) -> Decimal:
     return Decimal(cents) / 100
 
 
-def load_sessions(csv_file: StringIO) -> List[PokerSession]:
+def load_sessions(csv_file: StringIO) -> list[PokerSession]:
     """
     Load poker sessions from a CSV file or StringIO into a list of PokerSession models
 
@@ -41,14 +40,12 @@ def load_sessions(csv_file: StringIO) -> List[PokerSession]:
     reader = csv.DictReader(csv_file)
     rows = list(reader)
 
-    sessions: List[PokerSession] = []
+    sessions: list[PokerSession] = []
 
     for i, row in enumerate(rows):
         # Try to get adjacent row timestamps
         prev_start = (
-            parse_utc_datetime(rows[i - 1]["session_start_at"])
-            if i > 0 and rows[i - 1]["session_start_at"]
-            else None
+            parse_utc_datetime(rows[i - 1]["session_start_at"]) if i > 0 and rows[i - 1]["session_start_at"] else None
         )
         next_start = (
             parse_utc_datetime(rows[i + 1]["session_start_at"])
@@ -71,13 +68,9 @@ def load_sessions(csv_file: StringIO) -> List[PokerSession]:
             player_nickname_lowercase=row["player_nickname"].lower(),
             player_id=row["player_id"],
             session_start_at=start_time,
-            session_end_at=parse_utc_datetime(row["session_end_at"])
-            if row["session_end_at"]
-            else None,
+            session_end_at=parse_utc_datetime(row["session_end_at"]) if row["session_end_at"] else None,
             buy_in_dollars=cents_to_dollars(row["buy_in"]),
-            buy_out_dollars=cents_to_dollars(row["buy_out"])
-            if row["buy_out"]
-            else None,
+            buy_out_dollars=cents_to_dollars(row["buy_out"]) if row["buy_out"] else None,
             stack_dollars=cents_to_dollars(row["stack"]),
             net_dollars=cents_to_dollars(row["net"]),
         )
@@ -86,7 +79,7 @@ def load_sessions(csv_file: StringIO) -> List[PokerSession]:
     return sessions
 
 
-def load_starting_data(guild_id: str) -> List[StartingDataEntry]:
+def load_starting_data(guild_id: str) -> list[StartingDataEntry]:
     """
     Load starting balances from CSV file in S3
 
@@ -100,7 +93,7 @@ def load_starting_data(guild_id: str) -> List[StartingDataEntry]:
     bucket_name = AWSConfig.BUCKET_NAME
     prefix = f"uploads/{guild_id}/starting_data/"
 
-    starting_data: List[StartingDataEntry] = []
+    starting_data: list[StartingDataEntry] = []
     try:
         # Get the most recent starting data file
         response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
@@ -109,9 +102,7 @@ def load_starting_data(guild_id: str) -> List[StartingDataEntry]:
             return starting_data
 
         # Sort by last modified and get the most recent file
-        latest_file = sorted(
-            response["Contents"], key=lambda x: x["LastModified"], reverse=True
-        )[0]
+        latest_file = sorted(response["Contents"], key=lambda x: x["LastModified"], reverse=True)[0]
 
         # Get the file content
         file_obj = s3.get_object(Bucket=bucket_name, Key=latest_file["Key"])
@@ -170,7 +161,7 @@ def get_ledger_csv_paths_and_contents_from_s3_for_guild(
     return csv_files
 
 
-def load_all_ledger_sessions(guild_id: str) -> List[PokerSession]:
+def load_all_ledger_sessions(guild_id: str) -> list[PokerSession]:
     """
     Loads and combines all poker sessions from CSV files in S3.
 
@@ -178,9 +169,9 @@ def load_all_ledger_sessions(guild_id: str) -> List[PokerSession]:
         guild_id: Discord guild ID to load sessions for
 
     Returns:
-        List of all sessions combined
+        list of all sessions combined
     """
-    all_sessions: List[PokerSession] = []
+    all_sessions: list[PokerSession] = []
 
     for _, csv_file in get_ledger_csv_paths_and_contents_from_s3_for_guild(guild_id):
         sessions = load_sessions(csv_file)
