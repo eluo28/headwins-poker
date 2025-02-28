@@ -7,6 +7,7 @@ from discord.ext import commands
 from src.analytics.visualizations import get_file_object_of_player_nets_over_time
 from src.parsing.session_loading_helpers import (
     load_all_ledger_sessions,
+    load_player_mapping,
     load_starting_data,
 )
 
@@ -37,7 +38,8 @@ class GraphCommands(commands.Cog):
                 await interaction.followup.send("No sessions or starting data found", ephemeral=True)
                 return
 
-            file_object = get_file_object_of_player_nets_over_time(all_sessions, starting_data)
+            player_mapping_details = load_player_mapping(str(interaction.guild_id))
+            file_object = get_file_object_of_player_nets_over_time(all_sessions, starting_data, player_mapping_details)
             discord_file = discord.File(file_object, filename="player_nets_over_time.png")
 
             await interaction.followup.send(file=discord_file)

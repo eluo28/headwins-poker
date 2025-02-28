@@ -4,36 +4,33 @@ from logging import getLogger
 import pandas as pd
 import plotly.express as px
 
-from src.parsing.player_mapping import (
-    PLAYER_ID_TO_LOWERCASE_NAME,
-    PLAYER_NICKNAME_TO_LOWERCASE_NAME,
-)
-from src.parsing.schemas.session import PokerSession
+from parsing.schemas.player_mapping_details import PlayerMappingDetails
+from parsing.schemas.player_session_log import PlayerSessionLog
+from parsing.session_loading_helpers import consolidate_sessions_with_player_mapping_details
 from src.parsing.schemas.starting_data_entry import StartingDataEntry
 
 logger = getLogger(__name__)
 
 
 def get_file_object_of_player_nets_over_time(
-    sessions: list[PokerSession], starting_data: list[StartingDataEntry]
+    sessions: list[PlayerSessionLog],
+    starting_data: list[StartingDataEntry],
+    player_mapping_details: list[PlayerMappingDetails],
 ) -> BytesIO:
     if not sessions and not starting_data:
         raise ValueError("No sessions or starting data found")
+
+    consolidated_sessions = consolidate_sessions_with_player_mapping_details(sessions, player_mapping_details)
+
     # Convert sessions to DataFrame with mapped names
     df = pd.DataFrame(
         [
             {
-                "player": PLAYER_ID_TO_LOWERCASE_NAME.get(
-                    session.player_id,
-                    PLAYER_NICKNAME_TO_LOWERCASE_NAME.get(
-                        session.player_nickname_lowercase,
-                        session.player_nickname_lowercase,
-                    ),
-                ),
-                "date": session.session_start_at.date(),
+                "player": session.player_nickname_lowercase,
+                "date": session.date,
                 "net": session.net_dollars,
             }
-            for session in sessions
+            for session in consolidated_sessions
         ]
     )
 

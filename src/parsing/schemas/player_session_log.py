@@ -4,7 +4,7 @@ from decimal import Decimal
 from pydantic import BaseModel
 
 
-class PokerSession(BaseModel):
+class PlayerSessionLog(BaseModel):
     player_nickname_lowercase: str
     player_id: str
     session_start_at: datetime

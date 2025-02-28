@@ -1,4 +1,5 @@
 import csv
+import json
 from datetime import date, datetime
 from decimal import Decimal
 from io import StringIO
@@ -7,8 +8,10 @@ from pathlib import Path
 
 import boto3
 
+from parsing.schemas.consolidated_session import ConsolidatedPlayerSession
+from parsing.schemas.player_mapping_details import PlayerMappingDetails
+from parsing.schemas.player_session_log import PlayerSessionLog
 from src.config.aws_config import AWSConfig
-from src.parsing.schemas.session import PokerSession
 from src.parsing.schemas.starting_data_entry import StartingDataEntry
 
 logger = getLogger(__name__)
@@ -24,15 +27,15 @@ def cents_to_dollars(cents: str) -> Decimal:
     return Decimal(cents) / 100
 
 
-def load_sessions(csv_file: StringIO) -> list[PokerSession]:
+def load_sessions(csv_file: StringIO) -> list[PlayerSessionLog]:
     """
-    Load poker sessions from a CSV file or StringIO into a list of PokerSession models
+    Load poker sessions from a CSV file or StringIO into a list of PlayerSessionLog models
 
     Args:
         csv_path: Path to CSV file or StringIO containing CSV data
 
     Returns:
-        List of PokerSession objects
+        List of PlayerSessionLog objects
     """
     # First pass: read all rows into memory
     rows = []
@@ -40,7 +43,7 @@ def load_sessions(csv_file: StringIO) -> list[PokerSession]:
     reader = csv.DictReader(csv_file)
     rows = list(reader)
 
-    sessions: list[PokerSession] = []
+    sessions: list[PlayerSessionLog] = []
 
     for i, row in enumerate(rows):
         # Try to get adjacent row timestamps
@@ -64,7 +67,7 @@ def load_sessions(csv_file: StringIO) -> list[PokerSession]:
         else:
             raise ValueError(f"No start time found for row {i}")
 
-        session = PokerSession(
+        session = PlayerSessionLog(
             player_nickname_lowercase=row["player_nickname"].lower(),
             player_id=row["player_id"],
             session_start_at=start_time,
@@ -125,6 +128,46 @@ def load_starting_data(guild_id: str) -> list[StartingDataEntry]:
     return starting_data
 
 
+def load_player_mapping(guild_id: str) -> list[PlayerMappingDetails]:
+    """
+    Load player mappings from JSON in S3 and return ID and nickname mappings.
+
+    Args:
+        guild_id: Discord guild ID to load player mappings for
+
+    Returns:
+        Tuple of (id_to_name, nickname_to_name) mapping dicts
+    """
+    s3 = boto3.client("s3")
+    bucket_name = AWSConfig.BUCKET_NAME
+    key = f"uploads/{guild_id}/player_mapping.json"
+
+    player_mapping_details: list[PlayerMappingDetails] = []
+
+    try:
+        file_obj = s3.get_object(Bucket=bucket_name, Key=key)
+        file_content = file_obj["Body"].read().decode("utf-8")
+        player_mapping = json.loads(file_content)
+
+        for name, data in player_mapping.items():
+            name_lower = name.lower()
+            player_mapping_details.append(
+                PlayerMappingDetails(
+                    player_name_lowercase=name_lower,
+                    player_ids=[player_id.strip() for player_id in data["played_ids"].split(",")],
+                    player_nicknames_lowercase=[
+                        nickname.lower().strip() for nickname in data["played_nicknames"].split(",")
+                    ],
+                )
+            )
+
+    except Exception as e:
+        logger.error(f"Error loading player mapping from S3: {e}")
+        raise
+
+    return player_mapping_details
+
+
 def get_ledger_csv_paths_and_contents_from_s3_for_guild(
     guild_id: str,
 ) -> list[tuple[Path, StringIO]]:
@@ -161,7 +204,7 @@ def get_ledger_csv_paths_and_contents_from_s3_for_guild(
     return csv_files
 
 
-def load_all_ledger_sessions(guild_id: str) -> list[PokerSession]:
+def load_all_ledger_sessions(guild_id: str) -> list[PlayerSessionLog]:
     """
     Loads and combines all poker sessions from CSV files in S3.
 
@@ -171,10 +214,70 @@ def load_all_ledger_sessions(guild_id: str) -> list[PokerSession]:
     Returns:
         list of all sessions combined
     """
-    all_sessions: list[PokerSession] = []
+    all_sessions: list[PlayerSessionLog] = []
 
     for _, csv_file in get_ledger_csv_paths_and_contents_from_s3_for_guild(guild_id):
         sessions = load_sessions(csv_file)
         all_sessions.extend(sessions)
 
     return all_sessions
+
+
+def consolidate_sessions_with_player_mapping_details(
+    session_logs: list[PlayerSessionLog], player_mapping_details: list[PlayerMappingDetails]
+) -> list[ConsolidatedPlayerSession]:
+    consolidated_sessions: list[ConsolidatedPlayerSession] = []
+
+    # First consolidate based on player mapping details
+    for player_mapping_detail in player_mapping_details:
+        net_dollars = Decimal(0)
+        date = None
+        for session_log in session_logs:
+            if (
+                session_log.player_id in player_mapping_detail.player_ids
+                or session_log.player_nickname_lowercase in player_mapping_detail.player_nicknames_lowercase
+            ):
+                net_dollars += session_log.net_dollars
+                if date is None:
+                    date = session_log.session_start_at.date()
+
+        if date is None:
+            raise ValueError(f"No date found for player {player_mapping_detail.player_name_lowercase}")
+
+        if net_dollars != 0:  # Only add if they have activity
+            consolidated_sessions.append(
+                ConsolidatedPlayerSession(
+                    player_nickname_lowercase=player_mapping_detail.player_name_lowercase,
+                    net_dollars=net_dollars,
+                    date=date,
+                )
+            )
+
+    # Then consolidate any remaining unmapped nicknames
+    processed_nicknames = {
+        nickname for detail in player_mapping_details for nickname in detail.player_nicknames_lowercase
+    }
+
+    # Group unmapped sessions by nickname and consolidate
+    unmapped_sessions = {}
+    for session_log in session_logs:
+        if session_log.player_nickname_lowercase not in processed_nicknames:
+            if session_log.player_nickname_lowercase not in unmapped_sessions:
+                unmapped_sessions[session_log.player_nickname_lowercase] = {
+                    "net_dollars": Decimal(0),
+                    "date": session_log.session_start_at.date(),
+                }
+            unmapped_sessions[session_log.player_nickname_lowercase]["net_dollars"] += session_log.net_dollars
+
+    # Add consolidated unmapped sessions
+    for nickname, data in unmapped_sessions.items():
+        consolidated_sessions.append(
+            ConsolidatedPlayerSession(
+                player_nickname_lowercase=nickname,
+                net_dollars=data["net_dollars"],
+                date=data["date"],
+            )
+        )
+        processed_nicknames.add(nickname)
+
+    return consolidated_sessions
