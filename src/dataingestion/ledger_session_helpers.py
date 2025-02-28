@@ -1,6 +1,4 @@
 import csv
-import json
-from datetime import date, datetime
 from decimal import Decimal
 from io import StringIO
 from logging import getLogger
@@ -8,26 +6,16 @@ from pathlib import Path
 
 import boto3
 
-from parsing.schemas.consolidated_session import ConsolidatedPlayerSession
-from parsing.schemas.player_mapping_details import PlayerMappingDetails
-from parsing.schemas.player_session_log import PlayerSessionLog
 from src.config.aws_config import AWSConfig
-from src.parsing.schemas.starting_data_entry import StartingDataEntry
+from src.dataingestion.common_utils import cents_to_dollars, parse_utc_datetime
+from src.dataingestion.schemas.consolidated_session import ConsolidatedPlayerSession
+from src.dataingestion.schemas.player_mapping_details import PlayerMappingDetails
+from src.dataingestion.schemas.player_session_log import PlayerSessionLog
 
 logger = getLogger(__name__)
 
 
-def parse_utc_datetime(dt_str: str) -> datetime:
-    """Parse datetime string in UTC format"""
-    return datetime.fromisoformat(dt_str.replace("Z", "+00:00"))
-
-
-def cents_to_dollars(cents: str) -> Decimal:
-    """Convert cents to dollars, handling None values"""
-    return Decimal(cents) / 100
-
-
-def load_sessions(csv_file: StringIO) -> list[PlayerSessionLog]:
+def load_sessions_from_csv_file(csv_file: StringIO) -> list[PlayerSessionLog]:
     """
     Load poker sessions from a CSV file or StringIO into a list of PlayerSessionLog models
 
@@ -82,92 +70,6 @@ def load_sessions(csv_file: StringIO) -> list[PlayerSessionLog]:
     return sessions
 
 
-def load_starting_data(guild_id: str) -> list[StartingDataEntry]:
-    """
-    Load starting balances from CSV file in S3
-
-    Args:
-        guild_id: Discord guild ID to load starting data for
-
-    Returns:
-        List of StartingDataEntry objects containing player starting balances
-    """
-    s3 = boto3.client("s3")
-    bucket_name = AWSConfig.BUCKET_NAME
-    prefix = f"uploads/{guild_id}/starting_data/"
-
-    starting_data: list[StartingDataEntry] = []
-    try:
-        # Get the most recent starting data file
-        response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
-        if "Contents" not in response:
-            logger.warning(f"No starting data found for guild {guild_id}")
-            return starting_data
-
-        # Sort by last modified and get the most recent file
-        latest_file = sorted(response["Contents"], key=lambda x: x["LastModified"], reverse=True)[0]
-
-        # Get the file content
-        file_obj = s3.get_object(Bucket=bucket_name, Key=latest_file["Key"])
-        file_content = file_obj["Body"].read().decode("utf-8")
-
-        # Parse each line
-        for line in file_content.strip().split("\n"):
-            name, net, date_str = line.strip().split(",")
-            entry = StartingDataEntry(
-                player_name_lowercase=name.lower(),
-                net_dollars=Decimal(net),
-                date=date.fromisoformat(date_str),
-            )
-            starting_data.append(entry)
-
-    except Exception as e:
-        logger.error(f"Error loading starting data from S3: {e}")
-        raise
-
-    return starting_data
-
-
-def load_player_mapping(guild_id: str) -> list[PlayerMappingDetails]:
-    """
-    Load player mappings from JSON in S3 and return ID and nickname mappings.
-
-    Args:
-        guild_id: Discord guild ID to load player mappings for
-
-    Returns:
-        Tuple of (id_to_name, nickname_to_name) mapping dicts
-    """
-    s3 = boto3.client("s3")
-    bucket_name = AWSConfig.BUCKET_NAME
-    key = f"uploads/{guild_id}/player_mapping.json"
-
-    player_mapping_details: list[PlayerMappingDetails] = []
-
-    try:
-        file_obj = s3.get_object(Bucket=bucket_name, Key=key)
-        file_content = file_obj["Body"].read().decode("utf-8")
-        player_mapping = json.loads(file_content)
-
-        for name, data in player_mapping.items():
-            name_lower = name.lower()
-            player_mapping_details.append(
-                PlayerMappingDetails(
-                    player_name_lowercase=name_lower,
-                    player_ids=[player_id.strip() for player_id in data["played_ids"].split(",")],
-                    player_nicknames_lowercase=[
-                        nickname.lower().strip() for nickname in data["played_nicknames"].split(",")
-                    ],
-                )
-            )
-
-    except Exception as e:
-        logger.error(f"Error loading player mapping from S3: {e}")
-        raise
-
-    return player_mapping_details
-
-
 def get_ledger_csv_paths_and_contents_from_s3_for_guild(
     guild_id: str,
 ) -> list[tuple[Path, StringIO]]:
@@ -217,7 +119,7 @@ def load_all_ledger_sessions(guild_id: str) -> list[PlayerSessionLog]:
     all_sessions: list[PlayerSessionLog] = []
 
     for _, csv_file in get_ledger_csv_paths_and_contents_from_s3_for_guild(guild_id):
-        sessions = load_sessions(csv_file)
+        sessions = load_sessions_from_csv_file(csv_file)
         all_sessions.extend(sessions)
 
     return all_sessions
