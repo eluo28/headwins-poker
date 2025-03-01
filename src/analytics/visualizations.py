@@ -4,23 +4,21 @@ from logging import getLogger
 import pandas as pd
 import plotly.express as px
 
-from parsing.schemas.player_mapping_details import PlayerMappingDetails
-from parsing.schemas.player_session_log import PlayerSessionLog
-from parsing.session_loading_helpers import consolidate_sessions_with_player_mapping_details
-from src.parsing.schemas.starting_data_entry import StartingDataEntry
+from dataingestion.schemas.player_session_log import PlayerSessionLog
+from dataingestion.ledger_session_helpers import consolidate_sessions_with_player_mapping_details
+from dataingestion.schemas.registered_player import RegisteredPlayer
 
 logger = getLogger(__name__)
 
 
 def get_file_object_of_player_nets_over_time(
     sessions: list[PlayerSessionLog],
-    starting_data: list[StartingDataEntry],
-    player_mapping_details: list[PlayerMappingDetails],
+    registered_players: list[RegisteredPlayer],
 ) -> BytesIO:
-    if not sessions and not starting_data:
-        raise ValueError("No sessions or starting data found")
+    if not sessions:
+        raise ValueError("No sessions found")
 
-    consolidated_sessions = consolidate_sessions_with_player_mapping_details(sessions, player_mapping_details)
+    consolidated_sessions = consolidate_sessions_with_player_mapping_details(sessions, registered_players)
 
     # Convert sessions to DataFrame with mapped names
     df = pd.DataFrame(
@@ -39,10 +37,11 @@ def get_file_object_of_player_nets_over_time(
         [
             {
                 "player": entry.player_name_lowercase,
-                "date": entry.date,
-                "net": entry.net_dollars,
+                "date": entry.initial_details.initial_date,
+                "net": entry.initial_details.initial_net_amount,
             }
-            for entry in starting_data
+            for entry in registered_players
+            if entry.initial_details is not None
         ]
     )
 

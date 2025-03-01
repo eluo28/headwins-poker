@@ -6,10 +6,10 @@ from pathlib import Path
 
 import boto3
 
+from dataingestion.schemas.registered_player import RegisteredPlayer
 from src.config.aws_config import AWSConfig
 from src.dataingestion.common_utils import cents_to_dollars, parse_utc_datetime
 from src.dataingestion.schemas.consolidated_session import ConsolidatedPlayerSession
-from src.dataingestion.schemas.player_mapping_details import PlayerMappingDetails
 from src.dataingestion.schemas.player_session_log import PlayerSessionLog
 
 logger = getLogger(__name__)
@@ -126,30 +126,30 @@ def load_all_ledger_sessions(guild_id: str) -> list[PlayerSessionLog]:
 
 
 def consolidate_sessions_with_player_mapping_details(
-    session_logs: list[PlayerSessionLog], player_mapping_details: list[PlayerMappingDetails]
+    session_logs: list[PlayerSessionLog], registered_players: list[RegisteredPlayer]
 ) -> list[ConsolidatedPlayerSession]:
     consolidated_sessions: list[ConsolidatedPlayerSession] = []
 
     # First consolidate based on player mapping details
-    for player_mapping_detail in player_mapping_details:
+    for registered_player in registered_players:
         net_dollars = Decimal(0)
         date = None
         for session_log in session_logs:
             if (
-                session_log.player_id in player_mapping_detail.player_ids
-                or session_log.player_nickname_lowercase in player_mapping_detail.player_nicknames_lowercase
+                session_log.player_id in registered_player.player_ids
+                or session_log.player_nickname_lowercase in registered_player.player_nicknames_lowercase
             ):
                 net_dollars += session_log.net_dollars
                 if date is None:
                     date = session_log.session_start_at.date()
 
         if date is None:
-            raise ValueError(f"No date found for player {player_mapping_detail.player_name_lowercase}")
+            raise ValueError(f"No date found for player {registered_player.player_name_lowercase}")
 
         if net_dollars != 0:  # Only add if they have activity
             consolidated_sessions.append(
                 ConsolidatedPlayerSession(
-                    player_nickname_lowercase=player_mapping_detail.player_name_lowercase,
+                    player_nickname_lowercase=registered_player.player_name_lowercase,
                     net_dollars=net_dollars,
                     date=date,
                 )
@@ -157,7 +157,7 @@ def consolidate_sessions_with_player_mapping_details(
 
     # Then consolidate any remaining unmapped nicknames
     processed_nicknames = {
-        nickname for detail in player_mapping_details for nickname in detail.player_nicknames_lowercase
+        nickname for registered_player in registered_players for nickname in registered_player.player_nicknames_lowercase
     }
 
     # Group unmapped sessions by nickname and consolidate

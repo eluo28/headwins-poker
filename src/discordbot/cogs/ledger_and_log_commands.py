@@ -5,8 +5,8 @@ from discord import app_commands
 from discord.ext import commands
 
 from src.config.discord_config import DiscordConfig
-from src.discordbot.helpers.validation_helpers import validate_csv_files
-from src.discordbot.services.s3_service import S3Service
+from src.discordbot.helpers.validation_helpers import validate_ledger_and_log_files
+from discordbot.services.s3_service import S3Service
 
 logger = getLogger(__name__)
 
@@ -30,15 +30,19 @@ class LedgerAndLogCommands(commands.Cog):
             await interaction.response.defer(thinking=True)
             logger.info(f"Uploading ledger and log CSV files: {ledger_file.filename} and {log_file.filename}")
 
-            validation_result = await validate_csv_files(ledger_file, log_file)
+            validation_result = await validate_ledger_and_log_files(ledger_file, log_file)
             if validation_result:
                 await interaction.followup.send(validation_result, ephemeral=True)
                 return
 
-            uploaded_files, message = await self.s3_service.upload_ledger_and_log(
-                ledger_file, log_file, str(interaction.guild_id)
+            ledger_success, ledger_message = await self.s3_service.upload_file(
+                ledger_file, str(interaction.guild_id), "ledgers"
             )
-            await interaction.followup.send(message, ephemeral=len(uploaded_files) == 0)
+            log_success, log_message = await self.s3_service.upload_file(
+                log_file, str(interaction.guild_id), "logs"
+            )
+            await interaction.followup.send(ledger_message, ephemeral=not ledger_success)
+            await interaction.followup.send(log_message, ephemeral=not log_success)
 
         except Exception as e:
             logger.error(f"Error in upload_csv: {e}")

@@ -4,12 +4,12 @@ from logging import getLogger
 import boto3
 
 from src.config.aws_config import AWSConfig
-from src.dataingestion.schemas.player_mapping_details import PlayerMappingDetails
+from dataingestion.schemas.registered_player import InitialDetails, RegisteredPlayer
 
 logger = getLogger(__name__)
 
 
-def load_player_mapping(guild_id: str) -> list[PlayerMappingDetails]:
+def load_registered_players(guild_id: str) -> list[RegisteredPlayer]:
     """
     Load player mappings from JSON in S3 and return ID and nickname mappings.
 
@@ -23,7 +23,7 @@ def load_player_mapping(guild_id: str) -> list[PlayerMappingDetails]:
     bucket_name = AWSConfig.BUCKET_NAME
     key = f"uploads/{guild_id}/player_mapping.json"
 
-    player_mapping_details: list[PlayerMappingDetails] = []
+    registered_players: list[RegisteredPlayer] = []
 
     try:
         file_obj = s3.get_object(Bucket=bucket_name, Key=key)
@@ -32,18 +32,22 @@ def load_player_mapping(guild_id: str) -> list[PlayerMappingDetails]:
 
         for name, data in player_mapping.items():
             name_lower = name.lower()
-            player_mapping_details.append(
-                PlayerMappingDetails(
+            initial_details = data.get("initial_details", {})
+            registered_players.append(
+                RegisteredPlayer(
                     player_name_lowercase=name_lower,
                     player_ids=[player_id.strip() for player_id in data["played_ids"].split(",")],
                     player_nicknames_lowercase=[
                         nickname.lower().strip() for nickname in data["played_nicknames"].split(",")
                     ],
+                    initial_details=InitialDetails(
+                        initial_net_amount=initial_details["initial_net_amount"],
+                        initial_date=initial_details["initial_date"],
+                    ) if initial_details else None,
                 )
             )
-
     except Exception as e:
         logger.error(f"Error loading player mapping from S3: {e}")
         raise
 
-    return player_mapping_details
+    return registered_players

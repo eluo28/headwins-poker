@@ -5,11 +5,10 @@ from discord import app_commands
 from discord.ext import commands
 
 from src.analytics.visualizations import get_file_object_of_player_nets_over_time
-from src.parsing.session_loading_helpers import (
+from src.dataingestion.ledger_session_helpers import (
     load_all_ledger_sessions,
-    load_player_mapping,
-    load_starting_data,
 )
+from src.dataingestion.registered_player_helpers import load_registered_players
 
 logger = getLogger(__name__)
 
@@ -31,15 +30,14 @@ class GraphCommands(commands.Cog):
             all_sessions = load_all_ledger_sessions(str(interaction.guild_id))
             logger.info(f"Loaded {len(all_sessions)} ledger sessions")
 
-            starting_data = load_starting_data(str(interaction.guild_id))
-            logger.info(f"Loaded {len(starting_data)} starting data entries")
+            registered_players = load_registered_players(str(interaction.guild_id))
+            logger.info(f"Loaded {len(registered_players)} registered players")
 
-            if not all_sessions and not starting_data:
-                await interaction.followup.send("No sessions or starting data found", ephemeral=True)
+            if not all_sessions:
+                await interaction.followup.send("No sessions found", ephemeral=True)
                 return
 
-            player_mapping_details = load_player_mapping(str(interaction.guild_id))
-            file_object = get_file_object_of_player_nets_over_time(all_sessions, starting_data, player_mapping_details)
+            file_object = get_file_object_of_player_nets_over_time(all_sessions, registered_players)
             discord_file = discord.File(file_object, filename="player_nets_over_time.png")
 
             await interaction.followup.send(file=discord_file)

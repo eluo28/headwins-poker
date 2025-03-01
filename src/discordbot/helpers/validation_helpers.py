@@ -1,3 +1,4 @@
+import json
 import re
 from logging import getLogger
 
@@ -5,36 +6,59 @@ import discord
 
 logger = getLogger(__name__)
 
-STARTING_DATA_COLUMNS = 3
 
-
-async def validate_starting_data_file(file: discord.Attachment) -> str | None:
-    """Validate the starting data CSV file format."""
-    if not file.filename.endswith(".csv"):
-        return "Please upload a CSV file"
+async def validate_registered_players_file(file: discord.Attachment) -> str | None:
+    """Validate the registered players JSON file format."""
+    if not file.filename.endswith(".json"):
+        return "Please upload a JSON file"
 
     content = await file.read()
     text = content.decode("utf-8")
-    lines = text.strip().split("\n")
 
-    # Check each line format
-    for i, line in enumerate(lines):
-        parts = line.strip().split(",")
-        if len(parts) != STARTING_DATA_COLUMNS:
-            return f"Line {i + 1} should have exactly {STARTING_DATA_COLUMNS} columns: player_name,net_amount,date"
+    try:
+        data = json.loads(text)
 
-        try:
-            # Validate net amount is a number
-            float(parts[1])
-        except ValueError:
-            return f"Invalid net amount on line {i + 1}: {parts[1]}"
+        # Validate overall structure is a dict
+        if not isinstance(data, dict):
+            return "File must contain a JSON object"
 
-        try:
-            # Validate date format (YYYY-MM-DD)
-            if not re.match(r"^\d{4}-\d{2}-\d{2}$", parts[2].strip()):
-                raise ValueError
-        except ValueError:
-            return f"Invalid date format on line {i + 1}. Expected YYYY-MM-DD"
+        # Validate each player entry
+        for player_name, player_data in data.items():
+            # Check required fields exist
+            if not isinstance(player_data, dict):
+                return f"Invalid data format for player {player_name}"
+
+            if "played_ids" not in player_data or not isinstance(player_data["played_ids"], list):
+                return f"Missing or invalid played_ids for player {player_name}"
+
+            if "played_nicknames" not in player_data or not isinstance(player_data["played_nicknames"], list):
+                return f"Missing or invalid played_nicknames for player {player_name}"
+
+            # Validate initial_details if present
+            if "initial_details" in player_data:
+                initial_details = player_data["initial_details"]
+                if not isinstance(initial_details, dict):
+                    return f"Invalid initial_details format for player {player_name}"
+
+                if "initial_net_amount" not in initial_details:
+                    return f"Missing initial_net_amount in initial_details for player {player_name}"
+
+                if "initial_date" not in initial_details:
+                    return f"Missing initial_date in initial_details for player {player_name}"
+
+                try:
+                    float(initial_details["initial_net_amount"])
+                except (ValueError, TypeError):
+                    return f"Invalid initial_net_amount for player {player_name}"
+
+                if not re.match(r"^\d{4}-\d{2}-\d{2}$", initial_details["initial_date"]):
+                    return f"Invalid initial_date format for player {player_name}. Expected YYYY-MM-DD"
+
+    except json.JSONDecodeError:
+        return "Invalid JSON format"
+    except Exception as e:
+        logger.error(f"Error validating registered players file: {e}")
+        return "Error validating file format"
 
     return None
 
@@ -72,7 +96,7 @@ async def validate_log_file(log_file: discord.Attachment) -> str | None:
     return None
 
 
-async def validate_csv_files(ledger_file: discord.Attachment, log_file: discord.Attachment) -> str | None:
+async def validate_ledger_and_log_files(ledger_file: discord.Attachment, log_file: discord.Attachment) -> str | None:
     ledger_validation = await validate_ledger_file(ledger_file)
     if ledger_validation:
         return ledger_validation

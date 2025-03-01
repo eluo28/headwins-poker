@@ -9,7 +9,7 @@ from src.config.aws_config import AWSConfig
 
 logger = getLogger(__name__)
 
-FileType = Literal["starting_data", "ledgers", "logs"]
+FileType = Literal["registered_players", "ledgers", "logs"]
 
 
 class S3Service:
@@ -92,7 +92,7 @@ class S3Service:
             logger.error(f"Error deleting {file_type} file: {e}")
             return False, f"Failed to delete {filename}"
 
-    async def _upload_file(
+    async def upload_file(
         self,
         file: discord.Attachment,
         guild_id: str,
@@ -119,40 +119,4 @@ class S3Service:
             logger.error(f"Failed to upload {file.filename}: {e}")
             return False, f"Failed to upload {file.filename}"
 
-    async def upload_starting_data(self, starting_data_file: discord.Attachment, guild_id: str) -> tuple[bool, str]:
-        """
-        Upload starting data file to S3.
-        Returns (success, message)
-        """
-        return await self._upload_file(starting_data_file, guild_id, "starting_data")
 
-    async def upload_ledger_and_log(
-        self,
-        ledger_file: discord.Attachment,
-        log_file: discord.Attachment,
-        guild_id: str,
-    ) -> tuple[list[str], str]:
-        """
-        Upload ledger and log files to S3.
-        Returns (list of uploaded files, message)
-        """
-        uploaded_files = []
-        messages = []
-
-        file_types: list[tuple[discord.Attachment, FileType]] = [
-            (ledger_file, "ledgers"),
-            (log_file, "logs"),
-        ]
-
-        for file, file_type in file_types:
-            success, message = await self._upload_file(file, guild_id, file_type)
-            if success:
-                uploaded_files.append(file.filename)
-            messages.append(message)
-
-        if uploaded_files:
-            final_message = f"Successfully uploaded {len(uploaded_files)} files: {', '.join(uploaded_files)}"
-        else:
-            final_message = "No CSV files were uploaded successfully."
-
-        return uploaded_files, final_message
