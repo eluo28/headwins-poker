@@ -1,15 +1,14 @@
 import json
 from logging import getLogger
 
-import boto3
 
-from src.config.aws_config import AWSConfig
-from dataingestion.schemas.registered_player import InitialDetails, RegisteredPlayer
+from src.discordbot.services.s3_service import S3Service
+from src.dataingestion.schemas.registered_player import InitialDetails, RegisteredPlayer
 
 logger = getLogger(__name__)
 
 
-def load_registered_players(guild_id: str) -> list[RegisteredPlayer]:
+async def load_registered_players(guild_id: str, s3_service: S3Service) -> list[RegisteredPlayer]:
     """
     Load player mappings from JSON in S3 and return ID and nickname mappings.
 
@@ -19,35 +18,34 @@ def load_registered_players(guild_id: str) -> list[RegisteredPlayer]:
     Returns:
         Tuple of (id_to_name, nickname_to_name) mapping dicts
     """
-    s3 = boto3.client("s3")
-    bucket_name = AWSConfig.BUCKET_NAME
-    key = f"uploads/{guild_id}/player_mapping.json"
+    logger.info(f"Loading registered players for guild {guild_id}")
 
     registered_players: list[RegisteredPlayer] = []
 
     try:
-        file_obj = s3.get_object(Bucket=bucket_name, Key=key)
-        file_content = file_obj["Body"].read().decode("utf-8")
-        player_mapping = json.loads(file_content)
+        success, file_content = await s3_service.get_file(guild_id, "registered_players.json", "registered_players")
+        if not success:
+            raise Exception(file_content)
 
-        for name, data in player_mapping.items():
-            name_lower = name.lower()
-            initial_details = data.get("initial_details", {})
+        registered_players_json = json.loads(file_content)
+        
+        for player_name, player_data in registered_players_json.items():
             registered_players.append(
                 RegisteredPlayer(
-                    player_name_lowercase=name_lower,
-                    player_ids=[player_id.strip() for player_id in data["played_ids"].split(",")],
-                    player_nicknames_lowercase=[
-                        nickname.lower().strip() for nickname in data["played_nicknames"].split(",")
-                    ],
+                    player_name_lowercase=player_name.lower(),
+                    player_ids=player_data["played_ids"],
+                    player_nicknames_lowercase=[nick.lower() for nick in player_data["played_nicknames"]],
                     initial_details=InitialDetails(
-                        initial_net_amount=initial_details["initial_net_amount"],
-                        initial_date=initial_details["initial_date"],
-                    ) if initial_details else None,
+                        initial_net_amount=player_data["initial_details"]["initial_net_amount"],
+                        initial_date=player_data["initial_details"]["initial_date"],
+                    )
+                    if "initial_details" in player_data
+                    else None,
                 )
             )
+
+        return registered_players
+
     except Exception as e:
         logger.error(f"Error loading player mapping from S3: {e}")
-        raise
-
-    return registered_players
+        return []

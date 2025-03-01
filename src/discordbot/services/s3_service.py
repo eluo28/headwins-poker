@@ -21,6 +21,19 @@ class S3Service:
         """Get the S3 prefix for a given file type and guild."""
         return f"uploads/{guild_id}/{file_type}/"
 
+    async def get_file(self, guild_id: str, filename: str, file_type: FileType) -> tuple[bool, str]:
+        """
+        Get a specific file from S3.
+        Returns (success, message)
+        """
+        try:
+            key = self._get_prefix(guild_id, file_type) + filename
+            response = self.s3_client.get_object(Bucket=self.bucket_name, Key=key)
+            return True, response["Body"].read().decode("utf-8")
+        except Exception as e:
+            logger.error(f"Error getting {file_type} file: {e}")
+            return False, f"Failed to get {filename}"
+
     async def list_files(self, guild_id: str, file_type: FileType, limit: int | None = None) -> tuple[list[str], str]:
         """
         List files of a specific type in S3 for a guild.
@@ -42,7 +55,6 @@ class S3Service:
                 [
                     {"name": obj["Key"].split("/")[-1], "modified": obj["LastModified"]}
                     for obj in response["Contents"]
-                    if obj["Key"].endswith(".csv")
                 ],
                 key=lambda x: x["modified"],
                 reverse=True,
@@ -74,13 +86,16 @@ class S3Service:
         """
         try:
             key = self._get_prefix(guild_id, file_type) + filename
+            logger.info(f"Attempting to delete {file_type} file: {key}")
 
             # Check if file exists
             try:
                 self.s3_client.head_object(Bucket=self.bucket_name, Key=key)
             except self.s3_client.exceptions.ClientError as e:
                 if e.response["Error"]["Code"] == "404":
-                    return False, f"File '{filename}' not found"
+                    message = f"File '{filename}' not found"
+                    logger.info(message)
+                    return False, message
                 else:
                     raise
 
@@ -118,5 +133,3 @@ class S3Service:
         except Exception as e:
             logger.error(f"Failed to upload {file.filename}: {e}")
             return False, f"Failed to upload {file.filename}"
-
-

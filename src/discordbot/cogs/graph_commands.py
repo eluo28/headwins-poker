@@ -4,6 +4,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+from src.discordbot.services.s3_service import S3Service
 from src.analytics.visualizations import get_file_object_of_player_nets_over_time
 from src.dataingestion.ledger_session_helpers import (
     load_all_ledger_sessions,
@@ -27,10 +28,10 @@ class GraphCommands(commands.Cog):
             await interaction.response.defer(thinking=True)
             logger.info(f"Loading all ledger sessions for guild {interaction.guild_id}")
 
-            all_sessions = load_all_ledger_sessions(str(interaction.guild_id))
-            logger.info(f"Loaded {len(all_sessions)} ledger sessions")
+            all_sessions = await load_all_ledger_sessions(str(interaction.guild_id), S3Service())
+            logger.info(f"Loaded {len(all_sessions)} player ledger sessions")
 
-            registered_players = load_registered_players(str(interaction.guild_id))
+            registered_players = await load_registered_players(str(interaction.guild_id), S3Service())
             logger.info(f"Loaded {len(registered_players)} registered players")
 
             if not all_sessions:

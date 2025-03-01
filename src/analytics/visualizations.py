@@ -4,9 +4,9 @@ from logging import getLogger
 import pandas as pd
 import plotly.express as px
 
-from dataingestion.schemas.player_session_log import PlayerSessionLog
-from dataingestion.ledger_session_helpers import consolidate_sessions_with_player_mapping_details
-from dataingestion.schemas.registered_player import RegisteredPlayer
+from src.dataingestion.ledger_session_helpers import consolidate_sessions_with_player_mapping_details
+from src.dataingestion.schemas.player_session_log import PlayerSessionLog
+from src.dataingestion.schemas.registered_player import RegisteredPlayer
 
 logger = getLogger(__name__)
 
@@ -19,7 +19,7 @@ def get_file_object_of_player_nets_over_time(
         raise ValueError("No sessions found")
 
     consolidated_sessions = consolidate_sessions_with_player_mapping_details(sessions, registered_players)
-
+    
     # Convert sessions to DataFrame with mapped names
     df = pd.DataFrame(
         [
@@ -44,7 +44,6 @@ def get_file_object_of_player_nets_over_time(
             if entry.initial_details is not None
         ]
     )
-
     # Combine starting data with sessions
     df = pd.concat([starting_df, df])
 

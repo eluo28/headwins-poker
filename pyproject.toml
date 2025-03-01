@@ -57,6 +57,8 @@ ignore = [
     "COM812",  # missing-trailing-comma (conflict with another check)
     "ISC001",  # implicit-str-concat-in-assert (conflict with another check)
     "RUF015",  # unnecessary-iterable-allocation-for-first-element
+    "PLR0911",  # too-many-return-statements
+    "PLR0912",  # too-many-branches
 ]
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"

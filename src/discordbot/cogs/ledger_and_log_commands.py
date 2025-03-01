@@ -6,7 +6,7 @@ from discord.ext import commands
 
 from src.config.discord_config import DiscordConfig
 from src.discordbot.helpers.validation_helpers import validate_ledger_and_log_files
-from discordbot.services.s3_service import S3Service
+from src.discordbot.services.s3_service import S3Service
 
 logger = getLogger(__name__)
 
@@ -38,9 +38,7 @@ class LedgerAndLogCommands(commands.Cog):
             ledger_success, ledger_message = await self.s3_service.upload_file(
                 ledger_file, str(interaction.guild_id), "ledgers"
             )
-            log_success, log_message = await self.s3_service.upload_file(
-                log_file, str(interaction.guild_id), "logs"
-            )
+            log_success, log_message = await self.s3_service.upload_file(log_file, str(interaction.guild_id), "logs")
             await interaction.followup.send(ledger_message, ephemeral=not ledger_success)
             await interaction.followup.send(log_message, ephemeral=not log_success)
 

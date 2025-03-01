@@ -1,3 +1,4 @@
+from io import BytesIO
 from logging import getLogger
 
 import discord
@@ -6,7 +7,7 @@ from discord.ext import commands
 
 from src.config.discord_config import DiscordConfig
 from src.discordbot.helpers.validation_helpers import validate_registered_players_file
-from discordbot.services.s3_service import S3Service
+from src.discordbot.services.s3_service import S3Service
 
 logger = getLogger(__name__)
 
@@ -18,7 +19,7 @@ class RegisteredPlayerCommands(commands.Cog):
 
     @app_commands.command(
         name="upload_registered_players",
-        description="Upload registered players JSON file with player balances in the format of player_name,net_amount,date",
+        description="Upload registered players JSON file, see /help for more information",
     )
     async def upload_registered_players(
         self,
@@ -34,7 +35,9 @@ class RegisteredPlayerCommands(commands.Cog):
                 await interaction.followup.send(validation_result, ephemeral=True)
                 return
 
-            success, message = await self.s3_service.upload_file(registered_players_file, str(interaction.guild_id), "registered_players")
+            success, message = await self.s3_service.upload_file(
+                registered_players_file, str(interaction.guild_id), "registered_players"
+            )
             await interaction.followup.send(message, ephemeral=not success)
 
         except Exception as e:
@@ -42,20 +45,55 @@ class RegisteredPlayerCommands(commands.Cog):
             await interaction.followup.send("An error occurred while uploading the file.", ephemeral=True)
 
     @app_commands.command(
+        name="get_registered_players",
+        description="Get the registered players JSON file",
+    )
+    async def get_registered_players(self, interaction: discord.Interaction) -> None:
+        try:
+            await interaction.response.defer(thinking=True)
+            logger.info(f"Getting registered players file for guild {interaction.guild_id}")
+
+            success, content = await self.s3_service.get_file(
+                str(interaction.guild_id), filename="registered_players.json", file_type="registered_players"
+            )
+
+            if not success:
+                await interaction.followup.send(content, ephemeral=True)
+                return
+
+            file = discord.File(
+                BytesIO(content.encode()),
+                filename="registered_players.json",
+                description="Current registered players file",
+            )
+            await interaction.followup.send(file=file)
+
+        except Exception as e:
+            logger.error(f"Error in get_registered_players: {e}")
+            await interaction.followup.send("An error occurred while getting the file.", ephemeral=True)
+
+            
+    @app_commands.command(
         name="list_registered_players",
-        description="List last 10 registered players JSON files that have been uploaded, ordered by last modified date",
+        description="List all registered players files",
     )
     async def list_registered_players(self, interaction: discord.Interaction) -> None:
         try:
             await interaction.response.defer(thinking=True)
             logger.info(f"Listing registered players files for guild {interaction.guild_id}")
 
-            files, message = await self.s3_service.list_files(str(interaction.guild_id), "registered_players", limit=10)
-            await interaction.followup.send(message, ephemeral=len(files) == 0)
+            files, _ = await self.s3_service.list_files(str(interaction.guild_id), "registered_players")
+            
+            if not files:
+                await interaction.followup.send("No registered players files found.", ephemeral=True)
+                return
+
+            file_list = "\n".join(files)
+            await interaction.followup.send(f"Registered players files:\n```\n{file_list}\n```")
 
         except Exception as e:
             logger.error(f"Error in list_registered_players: {e}")
-            await interaction.followup.send("An error occurred while listing files.", ephemeral=True)
+            await interaction.followup.send("An error occurred while listing the files.", ephemeral=True)
 
     @app_commands.command(
         name="delete_registered_players",
@@ -65,23 +103,18 @@ class RegisteredPlayerCommands(commands.Cog):
     async def delete_registered_players(
         self,
         interaction: discord.Interaction,
-        filename: str,
     ) -> None:
-        logger.info(f"Deleting registered players file {filename} for guild {interaction.guild_id}")
+        if not isinstance(interaction.user, discord.Member):
+            await interaction.response.send_message("This command can only be used in a server", ephemeral=True)
+            return
+        
+        logger.info(f"Deleting registered players file for guild {interaction.guild_id}")
         try:
             await interaction.response.defer(thinking=True)
-            logger.info(f"Deleting registered players file {filename} for guild {interaction.guild_id}")
 
-            # First check if file exists
-            files, _ = await self.s3_service.list_files(str(interaction.guild_id), "registered_players")
-            if filename not in files:
-                await interaction.followup.send(
-                    f"File '{filename}' not found in registered players files.",
-                    ephemeral=True,
-                )
-                return
-
-            success, message = await self.s3_service.delete_file(str(interaction.guild_id), filename, "registered_players")
+            success, message = await self.s3_service.delete_file(
+                str(interaction.guild_id), "registered_players.json", "registered_players"
+            )
             await interaction.followup.send(message, ephemeral=not success)
 
         except Exception as e:

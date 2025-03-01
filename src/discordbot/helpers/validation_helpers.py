@@ -12,6 +12,9 @@ async def validate_registered_players_file(file: discord.Attachment) -> str | No
     if not file.filename.endswith(".json"):
         return "Please upload a JSON file"
 
+    if file.filename != "registered_players.json":
+        return "File must be named 'registered_players.json'"
+
     content = await file.read()
     text = content.decode("utf-8")
 

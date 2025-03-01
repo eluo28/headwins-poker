@@ -5,8 +5,8 @@ from pydantic import BaseModel
 
 
 class InitialDetails(BaseModel):
-    initial_net_amount: Decimal 
-    initial_date: date 
+    initial_net_amount: Decimal
+    initial_date: date
 
 
 class RegisteredPlayer(BaseModel):

@@ -2,15 +2,13 @@ import csv
 from decimal import Decimal
 from io import StringIO
 from logging import getLogger
-from pathlib import Path
 
-import boto3
 
-from dataingestion.schemas.registered_player import RegisteredPlayer
-from src.config.aws_config import AWSConfig
+from src.discordbot.services.s3_service import S3Service
 from src.dataingestion.common_utils import cents_to_dollars, parse_utc_datetime
 from src.dataingestion.schemas.consolidated_session import ConsolidatedPlayerSession
 from src.dataingestion.schemas.player_session_log import PlayerSessionLog
+from src.dataingestion.schemas.registered_player import RegisteredPlayer
 
 logger = getLogger(__name__)
 
@@ -70,35 +68,31 @@ def load_sessions_from_csv_file(csv_file: StringIO) -> list[PlayerSessionLog]:
     return sessions
 
 
-def get_ledger_csv_paths_and_contents_from_s3_for_guild(
+async def get_ledger_csv_file_contents(
     guild_id: str,
-) -> list[tuple[Path, StringIO]]:
+    s3_service: S3Service,
+) -> list[StringIO]:
     """
-    Gets paths and contents of ledger CSV files from S3 for a guild.
+    Gets contents of ledger CSV files from S3 for a guild.
 
     Args:
         guild_id: Discord guild ID to get files for
 
     Returns:
-        List of tuples containing (Path, StringIO) for each CSV file
+        List of csv file contents for each ledger CSV file
     """
-    s3 = boto3.client("s3")
-    bucket_name = AWSConfig.BUCKET_NAME
-    prefix = AWSConfig.LEDGER_PREFIX.format(guild_id=guild_id)
-
-    csv_files: list[tuple[Path, StringIO]] = []
+    csv_files: list[StringIO] = []
     try:
-        response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
-        if "Contents" in response:
-            for obj in response["Contents"]:
-                if obj["Key"].endswith(".csv"):
-                    # Get the object from S3
-                    file_obj = s3.get_object(Bucket=bucket_name, Key=obj["Key"])
-                    # Read the file content
-                    file_content = file_obj["Body"].read().decode("utf-8")
-                    # Create a StringIO object
-                    csv_file = StringIO(file_content)
-                    csv_files.append((Path(obj["Key"]), csv_file))
+        file_names, _ = await s3_service.list_files(guild_id, "ledgers")
+        for file_name in file_names:
+            if file_name.endswith(".csv"):
+                # Get the object from S3
+                success, file_content = await s3_service.get_file(guild_id, file_name, "ledgers")
+                if not success:
+                    raise Exception(file_content)
+                # Create a StringIO object
+                csv_file = StringIO(file_content)
+                csv_files.append(csv_file)
     except Exception as e:
         logger.error(f"Error accessing S3: {e}")
         raise
@@ -106,7 +100,7 @@ def get_ledger_csv_paths_and_contents_from_s3_for_guild(
     return csv_files
 
 
-def load_all_ledger_sessions(guild_id: str) -> list[PlayerSessionLog]:
+async def load_all_ledger_sessions(guild_id: str, s3_service: S3Service) -> list[PlayerSessionLog]:
     """
     Loads and combines all poker sessions from CSV files in S3.
 
@@ -117,8 +111,9 @@ def load_all_ledger_sessions(guild_id: str) -> list[PlayerSessionLog]:
         list of all sessions combined
     """
     all_sessions: list[PlayerSessionLog] = []
+    csv_files = await get_ledger_csv_file_contents(guild_id, s3_service)
 
-    for _, csv_file in get_ledger_csv_paths_and_contents_from_s3_for_guild(guild_id):
+    for csv_file in csv_files:
         sessions = load_sessions_from_csv_file(csv_file)
         all_sessions.extend(sessions)
 
@@ -130,23 +125,25 @@ def consolidate_sessions_with_player_mapping_details(
 ) -> list[ConsolidatedPlayerSession]:
     consolidated_sessions: list[ConsolidatedPlayerSession] = []
 
-    # First consolidate based on player mapping details
+    # First consolidate based on registered player details
     for registered_player in registered_players:
-        net_dollars = Decimal(0)
-        date = None
+        # Group sessions by date for each player
+        sessions_by_date = {}
         for session_log in session_logs:
             if (
                 session_log.player_id in registered_player.player_ids
                 or session_log.player_nickname_lowercase in registered_player.player_nicknames_lowercase
+                or session_log.player_nickname_lowercase == registered_player.player_name_lowercase
             ):
-                net_dollars += session_log.net_dollars
-                if date is None:
-                    date = session_log.session_start_at.date()
+                session_date = session_log.session_start_at.date()
+                if session_date not in sessions_by_date:
+                    sessions_by_date[session_date] = Decimal(0)
+                sessions_by_date[session_date] += session_log.net_dollars
 
-        if date is None:
-            raise ValueError(f"No date found for player {registered_player.player_name_lowercase}")
+        if not sessions_by_date:
+            raise ValueError(f"No sessions found for player {registered_player.player_name_lowercase}")
 
-        if net_dollars != 0:  # Only add if they have activity
+        for date, net_dollars in sessions_by_date.items():
             consolidated_sessions.append(
                 ConsolidatedPlayerSession(
                     player_nickname_lowercase=registered_player.player_name_lowercase,
@@ -156,30 +153,51 @@ def consolidate_sessions_with_player_mapping_details(
             )
 
     # Then consolidate any remaining unmapped nicknames
-    processed_nicknames = {
-        nickname for registered_player in registered_players for nickname in registered_player.player_nicknames_lowercase
+    processed_player_ids = {
+        player_id
+        for registered_player in registered_players
+        for player_id in registered_player.player_ids
     }
 
-    # Group unmapped sessions by nickname and consolidate
-    unmapped_sessions = {}
-    for session_log in session_logs:
-        if session_log.player_nickname_lowercase not in processed_nicknames:
-            if session_log.player_nickname_lowercase not in unmapped_sessions:
-                unmapped_sessions[session_log.player_nickname_lowercase] = {
-                    "net_dollars": Decimal(0),
-                    "date": session_log.session_start_at.date(),
-                }
-            unmapped_sessions[session_log.player_nickname_lowercase]["net_dollars"] += session_log.net_dollars
+    processed_nicknames = {
+        registered_player.player_name_lowercase
+        for registered_player in registered_players
+    } | {
+        nickname
+        for registered_player in registered_players
+        for nickname in registered_player.player_nicknames_lowercase
+    } | {
+        session_log.player_nickname_lowercase
+        for session_log in session_logs
+        if session_log.player_id in processed_player_ids
+    }
 
-    # Add consolidated unmapped sessions
-    for nickname, data in unmapped_sessions.items():
+    # Filter unmapped sessions and sort by nickname and date
+    unmapped_sessions = sorted(
+        [s for s in session_logs if s.player_nickname_lowercase not in processed_nicknames],
+        key=lambda x: (x.player_nickname_lowercase, x.session_start_at.date())
+    )
+
+    # Group sessions by nickname and date
+    grouped_sessions = {}
+    for session in unmapped_sessions:
+        nickname = session.player_nickname_lowercase
+        date = session.session_start_at.date()
+        key = (nickname, date)
+        
+        if key not in grouped_sessions:
+            grouped_sessions[key] = []
+        grouped_sessions[key].append(session)
+
+    # Consolidate grouped sessions
+    for (nickname, date), sessions in grouped_sessions.items():
+        net_dollars = sum(session.net_dollars for session in sessions)
         consolidated_sessions.append(
             ConsolidatedPlayerSession(
                 player_nickname_lowercase=nickname,
-                net_dollars=data["net_dollars"],
-                date=data["date"],
+                net_dollars=Decimal(net_dollars),
+                date=date
             )
         )
-        processed_nicknames.add(nickname)
 
     return consolidated_sessions

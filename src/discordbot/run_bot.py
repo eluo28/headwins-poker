@@ -42,29 +42,12 @@ async def on_ready() -> None:
     # Load cogs and sync commands after bot is ready
     await bot.load_extension("src.discordbot.cogs.graph_commands")
     await bot.load_extension("src.discordbot.cogs.ledger_and_log_commands")
-    await bot.load_extension("src.discordbot.cogs.starting_data_commands")
+    await bot.load_extension("src.discordbot.cogs.registered_player_commands")
     await bot.tree.sync()
 
     logger.info("Cogs loaded and commands synced")
     logger.info("------")
 
-
-@bot.command()
-@commands.has_role(DiscordConfig.HEADWINSPOKER_ADMIN_ROLE_NAME)
-async def reload(ctx: commands.Context[commands.Bot]) -> None:
-    """Reload all cogs and sync commands"""
-    try:
-        # Reload all extensions
-        await bot.reload_extension("src.discordbot.cogs.graph_commands")
-        await bot.reload_extension("src.discordbot.cogs.ledger_and_log_commands")
-        await bot.reload_extension("src.discordbot.cogs.starting_data_commands")
-        await bot.tree.sync()
-
-        logger.info("Cogs reloaded and commands synced")
-        await ctx.send("All cogs reloaded and commands synced!", ephemeral=True)
-    except Exception as e:
-        logger.error(f"Error reloading cogs: {e}")
-        await ctx.send("Error reloading cogs", ephemeral=True)
 
 
 if __name__ == "__main__":
