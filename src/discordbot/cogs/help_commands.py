@@ -24,7 +24,7 @@ class HelpCommands(commands.Cog):
             embed = discord.Embed(
                 title="Headwins Poker Bot Help",
                 description="This bot helps you track and analyze your poker games with friends. Here's how to use it:",
-                color=discord.Color.blue()
+                color=discord.Color.blue(),
             )
 
             # Registered Players section
@@ -43,7 +43,7 @@ class HelpCommands(commands.Cog):
                     '        "initial_details": {\n'
                     '            "initial_net_amount": 100.50,\n'
                     '            "initial_date": "YYYY-MM-DD"\n'
-                    '        }\n'
+                    "        }\n"
                     "    },\n"
                     '    "AnotherPlayer": {\n'
                     '        "played_ids": ["another_id"],\n'
@@ -51,7 +51,7 @@ class HelpCommands(commands.Cog):
                     '        "initial_details": {\n'
                     '            "initial_net_amount": -50.25,\n'
                     '            "initial_date": "YYYY-MM-DD"\n'
-                    '        }\n'
+                    "        }\n"
                     "    }\n"
                     "}\n"
                     "```\n"
@@ -59,14 +59,17 @@ class HelpCommands(commands.Cog):
                     "- `played_nicknames`: Nicknames used by this player\n"
                     "- `initial_details`: Starting balance and date (optional)\n"
                 ),
-                inline=False
+                inline=False,
             )
+
+            # Add empty field as spacer
+            embed.add_field(name="\u200b", value="\u200b", inline=False)
 
             # Ledger and Log Files section
             embed.add_field(
                 name="📊 Ledger and Log Files",
                 value=(
-                    "After each poker session, upload the CSV files from PokerNow using `/upload_ledger_and_log_csv`.\n\n"
+                    "After each pokernow session, upload the CSV files using `/upload_ledger_and_log_csv`.\n\n"
                     "**Steps:**\n"
                     "1. At the end of your PokerNow game, download both the **Ledger CSV** and **Hand Log CSV**\n"
                     "2. Use the `/upload_ledger_and_log_csv` command and attach both files\n"
@@ -74,8 +77,11 @@ class HelpCommands(commands.Cog):
                     "These files contain all the information about your poker session, including player balances, "
                     "hands played, and game actions."
                 ),
-                inline=False
+                inline=False,
             )
+
+            # Add empty field as spacer
+            embed.add_field(name="\u200b", value="\u200b", inline=False)
 
             # Analysis Commands section
             embed.add_field(
@@ -86,8 +92,11 @@ class HelpCommands(commands.Cog):
                     "- `/graph_played_time_totals` - See how much time each player has spent playing\n"
                     "- `/graph_profit_per_hour` - Analyze each player's profit per hour played\n"
                 ),
-                inline=False
+                inline=False,
             )
+
+            # Add empty field as spacer
+            embed.add_field(name="\u200b", value="\u200b", inline=False)
 
             # File Management section
             embed.add_field(
@@ -103,7 +112,7 @@ class HelpCommands(commands.Cog):
                     "- `/delete_log_file` - Delete a specific log file by name (admin only)\n"
                     "- `/delete_registered_players` - Delete the registered players file (admin only)\n"
                 ),
-                inline=False
+                inline=False,
             )
 
             # Send the embed
@@ -115,4 +124,4 @@ class HelpCommands(commands.Cog):
 
 
 async def setup(bot: commands.Bot) -> None:
-    await bot.add_cog(HelpCommands(bot)) 
+    await bot.add_cog(HelpCommands(bot))

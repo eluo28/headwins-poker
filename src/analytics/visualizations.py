@@ -11,8 +11,8 @@ from src.dataingestion.ledger_session_helpers import (
 from src.dataingestion.registered_player_helpers import load_registered_players
 from src.dataingestion.schemas.consolidated_session import ConsolidatedPlayerSession
 from src.dataingestion.schemas.player_session_log import PlayerSessionLog
-from src.discordbot.services.s3_service import S3Service
 from src.dataingestion.schemas.registered_player import RegisteredPlayer
+from src.discordbot.services.s3_service import S3Service
 
 logger = getLogger(__name__)
 
@@ -35,6 +35,7 @@ async def fetch_consolidated_sessions_and_registered_players(
     sessions, registered_players = await load_sessions_and_registered_players(guild_id, s3_service)
     consolidated_sessions = consolidate_sessions_with_player_mapping_details(sessions, registered_players)
     return consolidated_sessions, registered_players
+
 
 def get_file_object_of_player_played_time_totals(
     consolidated_sessions: list[ConsolidatedPlayerSession],
@@ -62,31 +63,24 @@ def get_file_object_of_player_played_time_totals(
 
     # If no sessions, use registered player names with 0 hours
     if not player_times:
-        player_times = {
-            player.player_name_lowercase: 0 
-            for player in registered_players
-        }
+        player_times = {player.player_name_lowercase: 0 for player in registered_players}
 
     # Convert to DataFrame and sort by total time
-    df = pd.DataFrame([
-        {"player": player, "hours": hours}
-        for player, hours in player_times.items()
-    ]).sort_values("hours", ascending=True)
+    df = pd.DataFrame([{"player": player, "hours": hours} for player, hours in player_times.items()]).sort_values(
+        "hours", ascending=True
+    )
 
     # Create bar chart
     fig = px.bar(
         df,
-        x="player", 
+        x="player",
         y="hours",
         title="Total Hours Played by Player",
-        labels={"hours": "Hours Played", "player": "Player"}
+        labels={"hours": "Hours Played", "player": "Player"},
     )
 
     # Add hour values as text on bars
-    fig.update_traces(
-        text=[f"{hours:.1f}h" for hours in df["hours"]],
-        textposition="outside"
-    )
+    fig.update_traces(text=[f"{hours:.1f}h" for hours in df["hours"]], textposition="outside")
 
     # Update layout
     fig.update_layout(
@@ -185,6 +179,7 @@ def get_file_object_of_player_nets_over_time(
     buffer.seek(0)
     return buffer
 
+
 def get_file_object_of_player_profit_per_hour(
     consolidated_sessions: list[ConsolidatedPlayerSession],
     registered_players: list[RegisteredPlayer],
@@ -205,26 +200,27 @@ def get_file_object_of_player_profit_per_hour(
         player = session.player_nickname_lowercase
         if player not in player_stats:
             player_stats[player] = {"total_profit": 0, "total_hours": 0}
-        
+
         # Add profit and hours
         player_stats[player]["total_profit"] += float(session.net_dollars)
         player_stats[player]["total_hours"] += session.time_played_ms / (1000 * 60 * 60)  # Convert ms to hours
 
     # If we have stats, calculate hourly rate and create DataFrame
     if player_stats:
-        df = pd.DataFrame([
-            {
-                "player": player,
-                "profit_per_hour": stats["total_profit"] / stats["total_hours"] if stats["total_hours"] > 0 else 0
-            }
-            for player, stats in player_stats.items()
-        ]).sort_values("profit_per_hour", ascending=True)
+        df = pd.DataFrame(
+            [
+                {
+                    "player": player,
+                    "profit_per_hour": stats["total_profit"] / stats["total_hours"] if stats["total_hours"] > 0 else 0,
+                }
+                for player, stats in player_stats.items()
+            ]
+        ).sort_values("profit_per_hour", ascending=True)
     else:
         # If no stats, use registered players with 0 profit/hour
-        df = pd.DataFrame([
-            {"player": player.player_name_lowercase, "profit_per_hour": 0}
-            for player in registered_players
-        ])
+        df = pd.DataFrame(
+            [{"player": player.player_name_lowercase, "profit_per_hour": 0} for player in registered_players]
+        )
 
     # Create bar chart
     fig = px.bar(
@@ -232,14 +228,11 @@ def get_file_object_of_player_profit_per_hour(
         x="player",
         y="profit_per_hour",
         title="Profit per Hour by Player",
-        labels={"profit_per_hour": "Profit per Hour ($)", "player": "Player"}
+        labels={"profit_per_hour": "Profit per Hour ($)", "player": "Player"},
     )
 
     # Add profit per hour values to player names
-    fig.update_traces(
-        text=[f"${x:,.2f}/hr" for x in df["profit_per_hour"]],
-        textposition="outside"
-    )
+    fig.update_traces(text=[f"${x:,.2f}/hr" for x in df["profit_per_hour"]], textposition="outside")
 
     # Update layout
     fig.update_layout(

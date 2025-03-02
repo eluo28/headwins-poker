@@ -7,7 +7,7 @@ from discord.ext import commands
 from dotenv import load_dotenv
 
 from src.config.discord_config import DiscordConfig
-from src.get_secret import get_secret
+from src.discordbot.services.secrets_manager_service import SecretsManagerService
 
 logger = logging.getLogger(__name__)
 
@@ -54,9 +54,11 @@ async def on_ready() -> None:
 if __name__ == "__main__":
     load_dotenv()
 
+    secrets_manager_service = SecretsManagerService()
+
     env = os.getenv("ENVIRONMENT")
     if env == "production":
-        token = get_secret("discord_token")
+        token = secrets_manager_service.get_secret("discord_token")
     else:
         token = os.getenv("TEST_DISCORD_BOT_TOKEN")
 
