@@ -248,3 +248,138 @@ def get_file_object_of_player_profit_per_hour(
     img_bytes.seek(0)
 
     return img_bytes
+
+
+def get_file_object_of_buy_in_analysis(
+    consolidated_sessions: list[ConsolidatedPlayerSession],
+    registered_players: list[RegisteredPlayer],
+) -> BytesIO:
+    """
+    Creates a scatter plot showing the relationship between buy-in amounts and final results.
+    Also includes a trend line and correlation analysis.
+
+    Args:
+        consolidated_sessions: List of consolidated player sessions
+        registered_players: List of registered players
+
+    Returns:
+        BytesIO object containing the rendered plot image
+    """
+    # Extract buy-in and net result data
+    data = []
+    for session in consolidated_sessions:
+        data.append({
+            "player": session.player_nickname_lowercase,
+            "buy_in": float(session.buy_in_dollars),
+            "net_result": float(session.net_dollars),
+            "date": session.date,
+            "roi": float(session.net_dollars) / float(session.buy_in_dollars) if float(session.buy_in_dollars) != 0 else 0
+        })
+    
+    # If no valid data, return an empty plot with a message
+    if not data:
+        fig = px.scatter(
+            title="Buy-In Analysis (No Data Available)",
+        )
+        fig.add_annotation(
+            text="No buy-in data available.",
+            showarrow=False,
+            font=dict(size=14)
+        )
+        buffer = BytesIO()
+        fig.write_image(buffer, format="png")
+        buffer.seek(0)
+        return buffer
+    
+    # Convert to DataFrame
+    df = pd.DataFrame(data)
+    
+    # Create scatter plot
+    fig = px.scatter(
+        df,
+        x="buy_in",
+        y="net_result",
+        color="player",
+        hover_data=["date", "roi"],
+        title="Buy-In Analysis: Relationship Between Buy-In Amount and Net Result",
+        labels={
+            "buy_in": "Buy-In Amount ($)",
+            "net_result": "Net Result ($)",
+            "player": "Player",
+            "roi": "ROI"
+        },
+        trendline="ols",  # Add trend line using Ordinary Least Squares
+    )
+    
+    # Calculate correlation
+    correlation = df["buy_in"].corr(df["net_result"])
+    
+    # Add correlation annotation
+    fig.add_annotation(
+        x=0.95,
+        y=0.05,
+        xref="paper",
+        yref="paper",
+        text=f"Correlation: {correlation:.2f}",
+        showarrow=False,
+        font=dict(size=12),
+        bgcolor="rgba(255, 255, 255, 0.7)",
+        bordercolor="black",
+        borderwidth=1,
+        borderpad=4,
+    )
+    
+    # Add horizontal line at y=0 (break-even point)
+    fig.add_hline(
+        y=0,
+        line_dash="dash",
+        line_color="gray",
+        annotation_text="Break Even",
+        annotation_position="bottom right"
+    )
+    
+    # Customize layout
+    fig.update_layout(
+        legend={"title": "Player"},
+        height=600,
+        width=1000,
+    )
+    
+    # Add quadrant labels
+    fig.add_annotation(
+        x=df["buy_in"].max() * 0.75,
+        y=df["net_result"].max() * 0.75,
+        text="High Buy-In, High Profit",
+        showarrow=False,
+        font=dict(size=10),
+    )
+    
+    fig.add_annotation(
+        x=df["buy_in"].min() * 1.25,
+        y=df["net_result"].max() * 0.75,
+        text="Low Buy-In, High Profit",
+        showarrow=False,
+        font=dict(size=10),
+    )
+    
+    fig.add_annotation(
+        x=df["buy_in"].max() * 0.75,
+        y=df["net_result"].min() * 0.75,
+        text="High Buy-In, High Loss",
+        showarrow=False,
+        font=dict(size=10),
+    )
+    
+    fig.add_annotation(
+        x=df["buy_in"].min() * 1.25,
+        y=df["net_result"].min() * 0.75,
+        text="Low Buy-In, High Loss",
+        showarrow=False,
+        font=dict(size=10),
+    )
+    
+    # Save to buffer
+    buffer = BytesIO()
+    fig.write_image(buffer, format="png")
+    buffer.seek(0)
+    return buffer

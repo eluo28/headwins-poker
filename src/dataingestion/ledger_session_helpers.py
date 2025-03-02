@@ -143,12 +143,13 @@ def consolidate_sessions_with_player_mapping_details(
             get_difference_in_ms(session.session_start_at, session.session_end_at) for session in sessions_list
         )
         total_net_dollars = sum((session.net_dollars for session in sessions_list), Decimal(0))
-
+        total_buy_in_dollars = sum((session.buy_in_dollars for session in sessions_list), Decimal(0))
         return ConsolidatedPlayerSession(
             player_nickname_lowercase=nickname,
             net_dollars=total_net_dollars,
             date=date_val,
             time_played_ms=total_time_played_ms,
+            buy_in_dollars=total_buy_in_dollars,
         )
 
     # 1. Process registered players

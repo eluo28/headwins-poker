@@ -9,6 +9,7 @@ from src.analytics.visualizations import (
     get_file_object_of_player_nets_over_time,
     get_file_object_of_player_played_time_totals,
     get_file_object_of_player_profit_per_hour,
+    get_file_object_of_buy_in_analysis,
 )
 from src.discordbot.services.s3_service import S3Service
 
@@ -89,6 +90,31 @@ class GraphCommands(commands.Cog):
             await interaction.followup.send(file=discord_file)
         except Exception as e:
             logger.error(f"Other error: {e}")
+            try:
+                await interaction.followup.send(f"An error occurred: {e!s}", ephemeral=True)
+            except Exception as e:
+                logger.error(f"Could not send error message: {e}")
+
+    @app_commands.command(
+        name="graph_buy_in_analysis",
+        description="Analyzes the relationship between buy-in amounts and final results",
+    )
+    async def graph_buy_in_analysis(self, interaction: discord.Interaction) -> None:
+        logger.info(f"Generating buy-in analysis for guild {interaction.guild_id}")
+        try:
+            await interaction.response.defer(thinking=True)
+            logger.info(f"Loading all ledger sessions and registered players for guild {interaction.guild_id}")
+
+            consolidated_sessions, registered_players = await fetch_consolidated_sessions_and_registered_players(
+                str(interaction.guild_id), S3Service()
+            )
+
+            file_object = get_file_object_of_buy_in_analysis(consolidated_sessions, registered_players)
+            discord_file = discord.File(file_object, filename="buy_in_analysis.png")
+
+            await interaction.followup.send(file=discord_file)
+        except Exception as e:
+            logger.error(f"Error in buy-in analysis: {e}")
             try:
                 await interaction.followup.send(f"An error occurred: {e!s}", ephemeral=True)
             except Exception as e:

@@ -9,3 +9,4 @@ class ConsolidatedPlayerSession(BaseModel):
     net_dollars: Decimal
     date: date
     time_played_ms: int
+    buy_in_dollars: Decimal
