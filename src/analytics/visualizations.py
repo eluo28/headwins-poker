@@ -82,11 +82,19 @@ def get_file_object_of_player_played_time_totals(
         labels={"hours": "Hours Played", "player": "Player"}
     )
 
+    # Add hour values as text on bars
+    fig.update_traces(
+        text=[f"{hours:.1f}h" for hours in df["hours"]],
+        textposition="outside"
+    )
+
     # Update layout
     fig.update_layout(
-        showlegend=False,
+        showlegend=False,  # Remove legend since it's redundant for a bar chart
         xaxis_title="Player",
         yaxis_title="Hours Played",
+        height=600,
+        width=1000,
     )
 
     # Save to BytesIO
@@ -227,11 +235,18 @@ def get_file_object_of_player_profit_per_hour(
         labels={"profit_per_hour": "Profit per Hour ($)", "player": "Player"}
     )
 
+    # Add profit per hour values to player names
+    fig.update_traces(
+        text=[f"${x:,.2f}/hr" for x in df["profit_per_hour"]],
+        textposition="outside"
+    )
+
     # Update layout
     fig.update_layout(
-        showlegend=False,
         xaxis_title="Player",
         yaxis_title="Profit per Hour ($)",
+        height=600,
+        width=1000,
     )
 
     # Save to BytesIO
