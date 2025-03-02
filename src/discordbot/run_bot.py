@@ -43,6 +43,7 @@ async def on_ready() -> None:
     await bot.load_extension("src.discordbot.cogs.graph_commands")
     await bot.load_extension("src.discordbot.cogs.ledger_and_log_commands")
     await bot.load_extension("src.discordbot.cogs.registered_player_commands")
+    await bot.load_extension("src.discordbot.cogs.help_commands")
     await bot.tree.sync()
 
     logger.info("Cogs loaded and commands synced")
