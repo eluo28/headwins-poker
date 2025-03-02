@@ -252,7 +252,6 @@ def get_file_object_of_player_profit_per_hour(
 
 def get_file_object_of_buy_in_analysis(
     consolidated_sessions: list[ConsolidatedPlayerSession],
-    registered_players: list[RegisteredPlayer],
 ) -> BytesIO:
     """
     Creates a scatter plot showing the relationship between buy-in amounts and final results.
@@ -260,7 +259,6 @@ def get_file_object_of_buy_in_analysis(
 
     Args:
         consolidated_sessions: List of consolidated player sessions
-        registered_players: List of registered players
 
     Returns:
         BytesIO object containing the rendered plot image
@@ -337,6 +335,33 @@ def get_file_object_of_buy_in_analysis(
         annotation_text="Break Even",
         annotation_position="bottom right"
     )
+    
+    # Add player labels directly to the scatter plot points
+    # First, calculate average position for each player to avoid too many labels
+    player_avg_positions = df.groupby('player').agg({
+        'buy_in': 'mean',
+        'net_result': 'mean'
+    }).reset_index()
+    
+    # Add text labels for each player at their average position
+    for _, row in player_avg_positions.iterrows():
+        fig.add_annotation(
+            x=row['buy_in'],
+            y=row['net_result'],
+            text=row['player'],
+            showarrow=True,
+            arrowhead=0,
+            arrowsize=0.3,
+            arrowwidth=1,
+            arrowcolor="rgba(0,0,0,0.5)",
+            ax=15,  # Offset in pixels
+            ay=-15,  # Offset in pixels
+            font=dict(size=10),
+            bgcolor="rgba(255,255,255,0.8)",
+            bordercolor="rgba(0,0,0,0.5)",
+            borderwidth=1,
+            borderpad=2,
+        )
     
     # Customize layout
     fig.update_layout(

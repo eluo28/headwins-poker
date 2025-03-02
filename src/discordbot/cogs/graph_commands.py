@@ -105,11 +105,11 @@ class GraphCommands(commands.Cog):
             await interaction.response.defer(thinking=True)
             logger.info(f"Loading all ledger sessions and registered players for guild {interaction.guild_id}")
 
-            consolidated_sessions, registered_players = await fetch_consolidated_sessions_and_registered_players(
+            consolidated_sessions, _ = await fetch_consolidated_sessions_and_registered_players(
                 str(interaction.guild_id), S3Service()
             )
 
-            file_object = get_file_object_of_buy_in_analysis(consolidated_sessions, registered_players)
+            file_object = get_file_object_of_buy_in_analysis(consolidated_sessions)
             discord_file = discord.File(file_object, filename="buy_in_analysis.png")
 
             await interaction.followup.send(file=discord_file)
