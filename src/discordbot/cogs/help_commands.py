@@ -91,6 +91,7 @@ class HelpCommands(commands.Cog):
                     "- `/graph_all_player_nets` - View all players' net profits over time\n"
                     "- `/graph_played_time_totals` - See how much time each player has spent playing\n"
                     "- `/graph_profit_per_hour` - Analyze each player's profit per hour played\n"
+                    "- `/graph_buy_in_analysis` - Analyze the relationship between buy-in amounts and final results\n"
                 ),
                 inline=False,
             )
