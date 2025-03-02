@@ -4,14 +4,17 @@ from logging import getLogger
 import boto3
 from botocore.exceptions import ClientError
 
+from src.config.aws_config import AWSConfig
+
 logger = getLogger(__name__)
 
 
 class SecretsManagerService:
     def __init__(self) -> None:
-        region_name = "us-east-1"
         session = boto3.Session()
-        self.client = session.client(service_name="secretsmanager", region_name=region_name)
+        self.client = session.client(
+            service_name="secretsmanager", region_name=AWSConfig.SECRET_MANAGER_REGION
+        )
 
     def get_secret(self, secret_name: str) -> str:
         try:
