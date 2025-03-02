@@ -6,10 +6,10 @@ from discord.ext import commands
 
 from src.analytics.visualizations import (
     fetch_consolidated_sessions_and_registered_players,
+    get_file_object_of_buy_in_analysis,
     get_file_object_of_player_nets_over_time,
     get_file_object_of_player_played_time_totals,
     get_file_object_of_player_profit_per_hour,
-    get_file_object_of_buy_in_analysis,
 )
 from src.discordbot.services.s3_service import S3Service
 

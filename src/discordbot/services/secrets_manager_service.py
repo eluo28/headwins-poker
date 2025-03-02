@@ -12,9 +12,7 @@ logger = getLogger(__name__)
 class SecretsManagerService:
     def __init__(self) -> None:
         session = boto3.Session()
-        self.client = session.client(
-            service_name="secretsmanager", region_name=AWSConfig.SECRET_MANAGER_REGION
-        )
+        self.client = session.client(service_name="secretsmanager", region_name=AWSConfig.SECRET_MANAGER_REGION)
 
     def get_secret(self, secret_name: str) -> str:
         try:
