@@ -176,3 +176,67 @@ def get_file_object_of_player_nets_over_time(
     fig.write_image(buffer, format="png")
     buffer.seek(0)
     return buffer
+
+def get_file_object_of_player_profit_per_hour(
+    consolidated_sessions: list[ConsolidatedPlayerSession],
+    registered_players: list[RegisteredPlayer],
+) -> BytesIO:
+    """
+    Creates a bar chart showing profit per hour for each player.
+
+    Args:
+        consolidated_sessions: List of consolidated player sessions
+        registered_players: List of registered players
+
+    Returns:
+        BytesIO object containing the rendered plot image
+    """
+    # Calculate profit per hour for each player
+    player_stats = {}
+    for session in consolidated_sessions:
+        player = session.player_nickname_lowercase
+        if player not in player_stats:
+            player_stats[player] = {"total_profit": 0, "total_hours": 0}
+        
+        # Add profit and hours
+        player_stats[player]["total_profit"] += float(session.net_dollars)
+        player_stats[player]["total_hours"] += session.time_played_ms / (1000 * 60 * 60)  # Convert ms to hours
+
+    # If we have stats, calculate hourly rate and create DataFrame
+    if player_stats:
+        df = pd.DataFrame([
+            {
+                "player": player,
+                "profit_per_hour": stats["total_profit"] / stats["total_hours"] if stats["total_hours"] > 0 else 0
+            }
+            for player, stats in player_stats.items()
+        ]).sort_values("profit_per_hour", ascending=True)
+    else:
+        # If no stats, use registered players with 0 profit/hour
+        df = pd.DataFrame([
+            {"player": player.player_name_lowercase, "profit_per_hour": 0}
+            for player in registered_players
+        ])
+
+    # Create bar chart
+    fig = px.bar(
+        df,
+        x="player",
+        y="profit_per_hour",
+        title="Profit per Hour by Player",
+        labels={"profit_per_hour": "Profit per Hour ($)", "player": "Player"}
+    )
+
+    # Update layout
+    fig.update_layout(
+        showlegend=False,
+        xaxis_title="Player",
+        yaxis_title="Profit per Hour ($)",
+    )
+
+    # Save to BytesIO
+    img_bytes = BytesIO()
+    fig.write_image(img_bytes, format="png")
+    img_bytes.seek(0)
+
+    return img_bytes

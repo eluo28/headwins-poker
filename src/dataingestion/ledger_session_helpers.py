@@ -1,4 +1,5 @@
 import csv
+import datetime
 from decimal import Decimal
 from io import StringIO
 from logging import getLogger
@@ -136,42 +137,44 @@ def consolidate_sessions_with_player_mapping_details(
     if not session_logs:
         return []
 
-    consolidated_sessions: list[ConsolidatedPlayerSession] = []
-
+    # Helper function to create a consolidated session from a group of sessions
+    def create_consolidated_session(nickname: str, date_val: datetime.date, sessions_list: list[PlayerSessionLog]):
+        total_time_played_ms = sum(
+            get_difference_in_ms(session.session_start_at, session.session_end_at)
+            for session in sessions_list
+        )
+        total_net_dollars = sum((session.net_dollars for session in sessions_list), Decimal(0))
+        
+        return ConsolidatedPlayerSession(
+            player_nickname_lowercase=nickname,
+            net_dollars=total_net_dollars,
+            date=date_val,
+            time_played_ms=total_time_played_ms,
+        )
+    
+    # 1. Process registered players
     sessions_by_player_and_date = {}
+    
     for registered_player in registered_players:
+        player_name = registered_player.player_name_lowercase
+        
+        # Find sessions belonging to this player
         for session_log in session_logs:
             if (
                 session_log.player_id in registered_player.player_ids
                 or session_log.player_nickname_lowercase in registered_player.player_nicknames_lowercase
-                or session_log.player_nickname_lowercase == registered_player.player_name_lowercase
+                or session_log.player_nickname_lowercase == player_name
             ):
                 session_date = session_log.session_start_at.date()
-                key = (registered_player.player_name_lowercase, session_date)
-                if key not in sessions_by_player_and_date:
-                    sessions_by_player_and_date[key] = []
-                sessions_by_player_and_date[key].append(session_log)
-
-    for (player_name, date), sessions_on_date in sessions_by_player_and_date.items():
-        total_time_played_ms = sum(
-            get_difference_in_ms(session.session_start_at, session.session_end_at)
-            for session in sessions_on_date
-        )
-
-        consolidated_sessions.append(
-            ConsolidatedPlayerSession(
-                player_nickname_lowercase=player_name,
-                net_dollars=sum((session.net_dollars for session in sessions_on_date), Decimal(0)),
-                date=date,
-                time_played_ms=total_time_played_ms,
-            )
-        )
-
-    # Then consolidate any remaining unmapped nicknames
+                key = (player_name, session_date)
+                
+                sessions_by_player_and_date.setdefault(key, []).append(session_log)
+    
+    # 2. Identify processed sessions
     processed_player_ids = {
         player_id for registered_player in registered_players for player_id in registered_player.player_ids
     }
-
+    
     processed_nicknames = (
         {registered_player.player_name_lowercase for registered_player in registered_players}
         | {
@@ -185,39 +188,24 @@ def consolidate_sessions_with_player_mapping_details(
             if session_log.player_id in processed_player_ids
         }
     )
-
-    # Filter unmapped sessions and sort by nickname and date
-    unmapped_sessions = sorted(
-        [s for s in session_logs if s.player_nickname_lowercase not in processed_nicknames],
-        key=lambda x: (x.player_nickname_lowercase, x.session_start_at.date()),
-    )
-
+    
+    # 3. Process unmapped sessions
+    unmapped_sessions = [
+        s for s in session_logs if s.player_nickname_lowercase not in processed_nicknames
+    ]
+    
     # Group sessions by nickname and date
-    grouped_sessions = {}
     for session in unmapped_sessions:
         nickname = session.player_nickname_lowercase
         date = session.session_start_at.date()
         key = (nickname, date)
-
-        if key not in grouped_sessions:
-            grouped_sessions[key] = []
-        grouped_sessions[key].append(session)
-
-    # Consolidate grouped sessions
-    for (nickname, date), sessions in grouped_sessions.items():
-        total_time_played_ms = sum(
-            get_difference_in_ms(session.session_start_at, session.session_end_at)
-            for session in sessions
-        )
-
-        net_dollars = sum(session.net_dollars for session in sessions)
-        consolidated_sessions.append(
-            ConsolidatedPlayerSession(
-                player_nickname_lowercase=nickname,
-                net_dollars=Decimal(net_dollars),
-                date=date,
-                time_played_ms=total_time_played_ms,
-            )
-        )
-
+        
+        sessions_by_player_and_date.setdefault(key, []).append(session)
+    
+    # 4. Create consolidated sessions from all grouped sessions
+    consolidated_sessions = [
+        create_consolidated_session(player, date, sessions)
+        for (player, date), sessions in sessions_by_player_and_date.items()
+    ]
+    
     return consolidated_sessions
