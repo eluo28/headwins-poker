@@ -8,3 +8,4 @@ class ConsolidatedPlayerSession(BaseModel):
     player_nickname_lowercase: str
     net_dollars: Decimal
     date: date
+    time_played_ms: int

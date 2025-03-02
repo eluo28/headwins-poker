@@ -3,7 +3,7 @@ from decimal import Decimal
 from io import StringIO
 from logging import getLogger
 
-from src.dataingestion.common_utils import cents_to_dollars, parse_utc_datetime
+from src.dataingestion.common_utils import cents_to_dollars, get_difference_in_ms, parse_utc_datetime
 from src.dataingestion.schemas.consolidated_session import ConsolidatedPlayerSession
 from src.dataingestion.schemas.player_session_log import PlayerSessionLog
 from src.dataingestion.schemas.registered_player import RegisteredPlayer
@@ -134,14 +134,12 @@ def consolidate_sessions_with_player_mapping_details(
     session_logs: list[PlayerSessionLog], registered_players: list[RegisteredPlayer]
 ) -> list[ConsolidatedPlayerSession]:
     if not session_logs:
-        raise ValueError("No sessions found, cannot consolidate")
+        return []
 
     consolidated_sessions: list[ConsolidatedPlayerSession] = []
 
-    # First consolidate based on registered player details
+    sessions_by_player_and_date = {}
     for registered_player in registered_players:
-        # Group sessions by date for each player
-        sessions_by_date = {}
         for session_log in session_logs:
             if (
                 session_log.player_id in registered_player.player_ids
@@ -149,21 +147,25 @@ def consolidate_sessions_with_player_mapping_details(
                 or session_log.player_nickname_lowercase == registered_player.player_name_lowercase
             ):
                 session_date = session_log.session_start_at.date()
-                if session_date not in sessions_by_date:
-                    sessions_by_date[session_date] = Decimal(0)
-                sessions_by_date[session_date] += session_log.net_dollars
+                key = (registered_player.player_name_lowercase, session_date)
+                if key not in sessions_by_player_and_date:
+                    sessions_by_player_and_date[key] = []
+                sessions_by_player_and_date[key].append(session_log)
 
-        if not sessions_by_date:
-            raise ValueError(f"No sessions found for player {registered_player.player_name_lowercase}")
+    for (player_name, date), sessions_on_date in sessions_by_player_and_date.items():
+        total_time_played_ms = sum(
+            get_difference_in_ms(session.session_start_at, session.session_end_at)
+            for session in sessions_on_date
+        )
 
-        for date, net_dollars in sessions_by_date.items():
-            consolidated_sessions.append(
-                ConsolidatedPlayerSession(
-                    player_nickname_lowercase=registered_player.player_name_lowercase,
-                    net_dollars=net_dollars,
-                    date=date,
-                )
+        consolidated_sessions.append(
+            ConsolidatedPlayerSession(
+                player_nickname_lowercase=player_name,
+                net_dollars=sum((session.net_dollars for session in sessions_on_date), Decimal(0)),
+                date=date,
+                time_played_ms=total_time_played_ms,
             )
+        )
 
     # Then consolidate any remaining unmapped nicknames
     processed_player_ids = {
@@ -203,9 +205,19 @@ def consolidate_sessions_with_player_mapping_details(
 
     # Consolidate grouped sessions
     for (nickname, date), sessions in grouped_sessions.items():
+        total_time_played_ms = sum(
+            get_difference_in_ms(session.session_start_at, session.session_end_at)
+            for session in sessions
+        )
+
         net_dollars = sum(session.net_dollars for session in sessions)
         consolidated_sessions.append(
-            ConsolidatedPlayerSession(player_nickname_lowercase=nickname, net_dollars=Decimal(net_dollars), date=date)
+            ConsolidatedPlayerSession(
+                player_nickname_lowercase=nickname,
+                net_dollars=Decimal(net_dollars),
+                date=date,
+                time_played_ms=total_time_played_ms,
+            )
         )
 
     return consolidated_sessions

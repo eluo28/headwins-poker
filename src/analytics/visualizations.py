@@ -4,14 +4,14 @@ from logging import getLogger
 import pandas as pd
 import plotly.express as px
 
-from dataingestion.ledger_session_helpers import (
+from src.dataingestion.ledger_session_helpers import (
     consolidate_sessions_with_player_mapping_details,
     load_all_ledger_sessions,
 )
-from dataingestion.registered_player_helpers import load_registered_players
-from dataingestion.schemas.consolidated_session import ConsolidatedPlayerSession
-from dataingestion.schemas.player_session_log import PlayerSessionLog
-from discordbot.services.s3_service import S3Service
+from src.dataingestion.registered_player_helpers import load_registered_players
+from src.dataingestion.schemas.consolidated_session import ConsolidatedPlayerSession
+from src.dataingestion.schemas.player_session_log import PlayerSessionLog
+from src.discordbot.services.s3_service import S3Service
 from src.dataingestion.schemas.registered_player import RegisteredPlayer
 
 logger = getLogger(__name__)
@@ -36,14 +36,71 @@ async def fetch_consolidated_sessions_and_registered_players(
     consolidated_sessions = consolidate_sessions_with_player_mapping_details(sessions, registered_players)
     return consolidated_sessions, registered_players
 
+def get_file_object_of_player_played_time_totals(
+    consolidated_sessions: list[ConsolidatedPlayerSession],
+    registered_players: list[RegisteredPlayer],
+) -> BytesIO:
+    """
+    Creates a bar chart showing total time played for each player.
+
+    Args:
+        consolidated_sessions: List of consolidated player sessions
+        registered_players: List of registered players
+
+    Returns:
+        BytesIO object containing the rendered plot image
+    """
+
+    # Calculate total hours played per player
+    player_times = {}
+    for session in consolidated_sessions:
+        player = session.player_nickname_lowercase
+        if player not in player_times:
+            player_times[player] = 0
+        # Convert milliseconds to hours
+        player_times[player] += session.time_played_ms / (1000 * 60 * 60)
+
+    # If no sessions, use registered player names with 0 hours
+    if not player_times:
+        player_times = {
+            player.player_name_lowercase: 0 
+            for player in registered_players
+        }
+
+    # Convert to DataFrame and sort by total time
+    df = pd.DataFrame([
+        {"player": player, "hours": hours}
+        for player, hours in player_times.items()
+    ]).sort_values("hours", ascending=True)
+
+    # Create bar chart
+    fig = px.bar(
+        df,
+        x="player", 
+        y="hours",
+        title="Total Hours Played by Player",
+        labels={"hours": "Hours Played", "player": "Player"}
+    )
+
+    # Update layout
+    fig.update_layout(
+        showlegend=False,
+        xaxis_title="Player",
+        yaxis_title="Hours Played",
+    )
+
+    # Save to BytesIO
+    img_bytes = BytesIO()
+    fig.write_image(img_bytes, format="png")
+    img_bytes.seek(0)
+
+    return img_bytes
+
 
 def get_file_object_of_player_nets_over_time(
     consolidated_sessions: list[ConsolidatedPlayerSession],
     registered_players: list[RegisteredPlayer],
 ) -> BytesIO:
-    if not consolidated_sessions:
-        raise ValueError("No sessions found")
-
     # Convert sessions to DataFrame with mapped names
     df = pd.DataFrame(
         [
