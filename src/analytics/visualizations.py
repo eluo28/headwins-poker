@@ -4,22 +4,46 @@ from logging import getLogger
 import pandas as pd
 import plotly.express as px
 
-from src.dataingestion.ledger_session_helpers import consolidate_sessions_with_player_mapping_details
-from src.dataingestion.schemas.player_session_log import PlayerSessionLog
+from dataingestion.ledger_session_helpers import (
+    consolidate_sessions_with_player_mapping_details,
+    load_all_ledger_sessions,
+)
+from dataingestion.registered_player_helpers import load_registered_players
+from dataingestion.schemas.consolidated_session import ConsolidatedPlayerSession
+from dataingestion.schemas.player_session_log import PlayerSessionLog
+from discordbot.services.s3_service import S3Service
 from src.dataingestion.schemas.registered_player import RegisteredPlayer
 
 logger = getLogger(__name__)
 
 
+async def load_sessions_and_registered_players(
+    guild_id: str, s3_service: S3Service
+) -> tuple[list[PlayerSessionLog], list[RegisteredPlayer]]:
+    sessions = await load_all_ledger_sessions(guild_id, s3_service)
+    logger.info(f"Loaded {len(sessions)} player ledger sessions")
+
+    registered_players = await load_registered_players(guild_id, s3_service)
+    logger.info(f"Loaded {len(registered_players)} registered players")
+
+    return sessions, registered_players
+
+
+async def fetch_consolidated_sessions_and_registered_players(
+    guild_id: str, s3_service: S3Service
+) -> tuple[list[ConsolidatedPlayerSession], list[RegisteredPlayer]]:
+    sessions, registered_players = await load_sessions_and_registered_players(guild_id, s3_service)
+    consolidated_sessions = consolidate_sessions_with_player_mapping_details(sessions, registered_players)
+    return consolidated_sessions, registered_players
+
+
 def get_file_object_of_player_nets_over_time(
-    sessions: list[PlayerSessionLog],
+    consolidated_sessions: list[ConsolidatedPlayerSession],
     registered_players: list[RegisteredPlayer],
 ) -> BytesIO:
-    if not sessions:
+    if not consolidated_sessions:
         raise ValueError("No sessions found")
 
-    consolidated_sessions = consolidate_sessions_with_player_mapping_details(sessions, registered_players)
-    
     # Convert sessions to DataFrame with mapped names
     df = pd.DataFrame(
         [

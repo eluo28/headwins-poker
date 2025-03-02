@@ -3,12 +3,11 @@ from decimal import Decimal
 from io import StringIO
 from logging import getLogger
 
-
-from src.discordbot.services.s3_service import S3Service
 from src.dataingestion.common_utils import cents_to_dollars, parse_utc_datetime
 from src.dataingestion.schemas.consolidated_session import ConsolidatedPlayerSession
 from src.dataingestion.schemas.player_session_log import PlayerSessionLog
 from src.dataingestion.schemas.registered_player import RegisteredPlayer
+from src.discordbot.services.s3_service import S3Service
 
 logger = getLogger(__name__)
 
@@ -30,6 +29,17 @@ def load_sessions_from_csv_file(csv_file: StringIO) -> list[PlayerSessionLog]:
     rows = list(reader)
 
     sessions: list[PlayerSessionLog] = []
+
+    # Find latest end time across all rows before processing individual rows
+    latest_end_time = None
+    for r in rows:
+        if r["session_end_at"]:
+            row_end = parse_utc_datetime(r["session_end_at"])
+            if latest_end_time is None or row_end > latest_end_time:
+                latest_end_time = row_end
+
+    if latest_end_time is None:
+        raise ValueError("No end time found in any row")
 
     for i, row in enumerate(rows):
         # Try to get adjacent row timestamps
@@ -57,7 +67,7 @@ def load_sessions_from_csv_file(csv_file: StringIO) -> list[PlayerSessionLog]:
             player_nickname_lowercase=row["player_nickname"].lower(),
             player_id=row["player_id"],
             session_start_at=start_time,
-            session_end_at=parse_utc_datetime(row["session_end_at"]) if row["session_end_at"] else None,
+            session_end_at=parse_utc_datetime(row["session_end_at"]) if row["session_end_at"] else latest_end_time,
             buy_in_dollars=cents_to_dollars(row["buy_in"]),
             buy_out_dollars=cents_to_dollars(row["buy_out"]) if row["buy_out"] else None,
             stack_dollars=cents_to_dollars(row["stack"]),
@@ -123,6 +133,9 @@ async def load_all_ledger_sessions(guild_id: str, s3_service: S3Service) -> list
 def consolidate_sessions_with_player_mapping_details(
     session_logs: list[PlayerSessionLog], registered_players: list[RegisteredPlayer]
 ) -> list[ConsolidatedPlayerSession]:
+    if not session_logs:
+        raise ValueError("No sessions found, cannot consolidate")
+
     consolidated_sessions: list[ConsolidatedPlayerSession] = []
 
     # First consolidate based on registered player details
@@ -154,28 +167,27 @@ def consolidate_sessions_with_player_mapping_details(
 
     # Then consolidate any remaining unmapped nicknames
     processed_player_ids = {
-        player_id
-        for registered_player in registered_players
-        for player_id in registered_player.player_ids
+        player_id for registered_player in registered_players for player_id in registered_player.player_ids
     }
 
-    processed_nicknames = {
-        registered_player.player_name_lowercase
-        for registered_player in registered_players
-    } | {
-        nickname
-        for registered_player in registered_players
-        for nickname in registered_player.player_nicknames_lowercase
-    } | {
-        session_log.player_nickname_lowercase
-        for session_log in session_logs
-        if session_log.player_id in processed_player_ids
-    }
+    processed_nicknames = (
+        {registered_player.player_name_lowercase for registered_player in registered_players}
+        | {
+            nickname
+            for registered_player in registered_players
+            for nickname in registered_player.player_nicknames_lowercase
+        }
+        | {
+            session_log.player_nickname_lowercase
+            for session_log in session_logs
+            if session_log.player_id in processed_player_ids
+        }
+    )
 
     # Filter unmapped sessions and sort by nickname and date
     unmapped_sessions = sorted(
         [s for s in session_logs if s.player_nickname_lowercase not in processed_nicknames],
-        key=lambda x: (x.player_nickname_lowercase, x.session_start_at.date())
+        key=lambda x: (x.player_nickname_lowercase, x.session_start_at.date()),
     )
 
     # Group sessions by nickname and date
@@ -184,7 +196,7 @@ def consolidate_sessions_with_player_mapping_details(
         nickname = session.player_nickname_lowercase
         date = session.session_start_at.date()
         key = (nickname, date)
-        
+
         if key not in grouped_sessions:
             grouped_sessions[key] = []
         grouped_sessions[key].append(session)
@@ -193,11 +205,7 @@ def consolidate_sessions_with_player_mapping_details(
     for (nickname, date), sessions in grouped_sessions.items():
         net_dollars = sum(session.net_dollars for session in sessions)
         consolidated_sessions.append(
-            ConsolidatedPlayerSession(
-                player_nickname_lowercase=nickname,
-                net_dollars=Decimal(net_dollars),
-                date=date
-            )
+            ConsolidatedPlayerSession(player_nickname_lowercase=nickname, net_dollars=Decimal(net_dollars), date=date)
         )
 
     return consolidated_sessions

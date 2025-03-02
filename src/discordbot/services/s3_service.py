@@ -52,10 +52,7 @@ class S3Service:
 
             # Get filenames and sort by last modified
             files = sorted(
-                [
-                    {"name": obj["Key"].split("/")[-1], "modified": obj["LastModified"]}
-                    for obj in response["Contents"]
-                ],
+                [{"name": obj["Key"].split("/")[-1], "modified": obj["LastModified"]} for obj in response["Contents"]],
                 key=lambda x: x["modified"],
                 reverse=True,
             )

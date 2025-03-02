@@ -49,7 +49,6 @@ async def on_ready() -> None:
     logger.info("------")
 
 
-
 if __name__ == "__main__":
     load_dotenv()
     token = get_secret("discord_token")

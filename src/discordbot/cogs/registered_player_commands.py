@@ -72,7 +72,6 @@ class RegisteredPlayerCommands(commands.Cog):
             logger.error(f"Error in get_registered_players: {e}")
             await interaction.followup.send("An error occurred while getting the file.", ephemeral=True)
 
-            
     @app_commands.command(
         name="list_registered_players",
         description="List all registered players files",
@@ -83,7 +82,7 @@ class RegisteredPlayerCommands(commands.Cog):
             logger.info(f"Listing registered players files for guild {interaction.guild_id}")
 
             files, _ = await self.s3_service.list_files(str(interaction.guild_id), "registered_players")
-            
+
             if not files:
                 await interaction.followup.send("No registered players files found.", ephemeral=True)
                 return
@@ -107,7 +106,7 @@ class RegisteredPlayerCommands(commands.Cog):
         if not isinstance(interaction.user, discord.Member):
             await interaction.response.send_message("This command can only be used in a server", ephemeral=True)
             return
-        
+
         logger.info(f"Deleting registered players file for guild {interaction.guild_id}")
         try:
             await interaction.response.defer(thinking=True)

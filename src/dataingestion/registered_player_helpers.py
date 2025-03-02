@@ -1,9 +1,8 @@
 import json
 from logging import getLogger
 
-
-from src.discordbot.services.s3_service import S3Service
 from src.dataingestion.schemas.registered_player import InitialDetails, RegisteredPlayer
+from src.discordbot.services.s3_service import S3Service
 
 logger = getLogger(__name__)
 
@@ -28,7 +27,7 @@ async def load_registered_players(guild_id: str, s3_service: S3Service) -> list[
             raise Exception(file_content)
 
         registered_players_json = json.loads(file_content)
-        
+
         for player_name, player_data in registered_players_json.items():
             registered_players.append(
                 RegisteredPlayer(
