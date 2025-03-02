@@ -373,37 +373,77 @@ def get_file_object_of_buy_in_analysis(
         width=1000,
     )
 
-    # Add quadrant labels
+    # Add quadrant labels outside the graph area
+    # Top right quadrant
     fig.add_annotation(
-        x=df["avg_buy_in"].max() * 0.75,
-        y=df["avg_net_profit"].max() * 0.75,
+        x=1.0,  # Position at the right edge of the plot
+        y=1.0,  # Position at the top of the plot
+        xref="paper",
+        yref="paper",
         text="High Buy-In, High Profit",
         showarrow=False,
         font={"size": 10},
+        align="right",
+        bgcolor="rgba(255,255,255,0.7)",
+        bordercolor="rgba(0,0,0,0.2)",
+        borderwidth=1,
+        borderpad=4,
+        xanchor="right",
+        yanchor="top",
     )
 
+    # Top left quadrant
     fig.add_annotation(
-        x=df["avg_buy_in"].min() * 1.25,
-        y=df["avg_net_profit"].max() * 0.75,
+        x=0.0,  # Position at the left edge of the plot
+        y=1.0,  # Position at the top of the plot
+        xref="paper",
+        yref="paper",
         text="Low Buy-In, High Profit",
         showarrow=False,
         font={"size": 10},
+        align="left",
+        bgcolor="rgba(255,255,255,0.7)",
+        bordercolor="rgba(0,0,0,0.2)",
+        borderwidth=1,
+        borderpad=4,
+        xanchor="left",
+        yanchor="top",
     )
 
+    # Bottom right quadrant
     fig.add_annotation(
-        x=df["avg_buy_in"].max() * 0.75,
-        y=df["avg_net_profit"].min() * 0.75,
+        x=1.0,  # Position at the right edge of the plot
+        y=0.0,  # Position at the bottom of the plot
+        xref="paper",
+        yref="paper",
         text="High Buy-In, High Loss",
         showarrow=False,
         font={"size": 10},
+        align="right",
+        bgcolor="rgba(255,255,255,0.7)",
+        bordercolor="rgba(0,0,0,0.2)",
+        borderwidth=1,
+        borderpad=4,
+        xanchor="right",
+        yanchor="bottom",
     )
 
+    # Bottom left quadrant
     fig.add_annotation(
-        x=df["avg_buy_in"].min() * 1.25,
-        y=df["avg_net_profit"].min() * 0.75,
+        x=0.0,  # Position at the left edge of the plot
+        y=0.0,  # Position at the bottom of the plot
+        xref="paper",
+        yref="paper",
         text="Low Buy-In, High Loss",
         showarrow=False,
         font={"size": 10},
+        align="left",
+        bgcolor="rgba(255,255,255,0.7)",
+        bordercolor="rgba(0,0,0,0.2)",
+        borderwidth=1,
+        borderpad=4,
+        xanchor="left",
+        yanchor="bottom",
     )
 
     # Save to buffer
