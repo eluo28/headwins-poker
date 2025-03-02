@@ -11,6 +11,9 @@ RUN pip install poetry
 # Create and set working directory
 WORKDIR /app
 
+# Set environment to production
+ENV ENVIRONMENT=production
+
 # Copy ALL code first (including src directory)
 COPY . .
 

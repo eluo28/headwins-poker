@@ -1,4 +1,5 @@
 import logging
+import os
 
 import discord
 from discord import app_commands
@@ -52,5 +53,14 @@ async def on_ready() -> None:
 
 if __name__ == "__main__":
     load_dotenv()
-    token = get_secret("discord_token")
+
+    env = os.getenv("ENVIRONMENT")
+    if env == "production":
+        token = get_secret("discord_token")
+    else:
+        token = os.getenv("TEST_DISCORD_BOT_TOKEN")
+
+    if token is None:
+        raise ValueError("No token found")
+
     bot.run(token)
