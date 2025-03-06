@@ -6,7 +6,7 @@ Analytics for Poker Now data.
 
 ### 📋 Registered Players
 
-To consolidate your players' information (if the same player plays under different nicknames), or if you want to add initial details to a player's record, upload a JSON file with your players' information using `/upload_registered_players`.
+To consolidate your players' information (if the same player plays under different nicknames), or if you want to add initial details to a player's record, upload a JSON file named `registered_players.json` with your players' information using `/upload_registered_players`.
 
 **Format Example:**
 ```json
