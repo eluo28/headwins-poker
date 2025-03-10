@@ -10,7 +10,7 @@ env:
   ECS_SERVICE: headwins-poker-service
   ECS_CLUSTER: headwins-poker
   CONTAINER_NAME: headwins-poker
-  NUMBER_OF_IMAGES_TO_KEEP: 3  # Keep latest N images
+  NUMBER_OF_IMAGES_TO_KEEP: 2  # Keep latest N images
   TASK_DEFINITION_FILE: headwins-poker-task.json
 
 jobs:
