@@ -4,13 +4,16 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from src.analytics.visualizations import (
+from src.dataingestion.registered_player_helpers import load_registered_players
+from src.dataingestion.poker_hand_parser import load_all_poker_logs
+from src.analytics.ledger_visualizations import (
     fetch_consolidated_sessions_and_registered_players,
     get_file_object_of_buy_in_analysis,
     get_file_object_of_player_nets_over_time,
     get_file_object_of_player_played_time_totals,
     get_file_object_of_player_profit_per_hour,
 )
+from src.analytics.log_visualizations import  get_file_object_of_total_vpip, get_file_object_of_vpip_over_time
 from src.discordbot.services.s3_service import S3Service
 
 logger = getLogger(__name__)
@@ -115,6 +118,65 @@ class GraphCommands(commands.Cog):
             await interaction.followup.send(file=discord_file)
         except Exception as e:
             logger.error(f"Error in buy-in analysis: {e}")
+            try:
+                await interaction.followup.send(f"An error occurred: {e!s}", ephemeral=True)
+            except Exception as e:
+                logger.error(f"Could not send error message: {e}")
+
+
+    @app_commands.command(
+        name="graph_total_vpip",
+        description="Generates a graph showing VPIP (Voluntarily Put Money In Pot) percentage for each player",
+    )
+    async def graph_total_vpip(self, interaction: discord.Interaction) -> None:
+        logger.info(f"Graphing VPIP percentages for guild {interaction.guild_id}")
+        try:
+            await interaction.response.defer(thinking=True)
+            logger.info(f"Loading poker hands for guild {interaction.guild_id}")
+
+            registered_players = await load_registered_players(str(interaction.guild_id), S3Service())
+            # Load hands from S3
+            logs = await load_all_poker_logs(str(interaction.guild_id), S3Service(), registered_players)
+
+            if not logs:
+                await interaction.followup.send("No poker hand data available yet.", ephemeral=True)
+                return
+
+            file_object = get_file_object_of_total_vpip(logs)
+            discord_file = discord.File(file_object, filename="vpip_analysis.png")
+
+            await interaction.followup.send(file=discord_file)
+        except Exception as e:
+            logger.error(f"Error in VPIP analysis: {e}")
+            try:
+                await interaction.followup.send(f"An error occurred: {e!s}", ephemeral=True)
+            except Exception as e:
+                logger.error(f"Could not send error message: {e}")
+
+    @app_commands.command(
+        name="graph_vpip_by_session",
+        description="Generates a graph showing how each player's VPIP percentage changes over time",
+    )
+    async def graph_vpip_by_session(self, interaction: discord.Interaction) -> None:
+        logger.info(f"Graphing VPIP percentages over time for guild {interaction.guild_id}")
+        try:
+            await interaction.response.defer(thinking=True)
+            logger.info(f"Loading poker hands for guild {interaction.guild_id}")
+
+            registered_players = await load_registered_players(str(interaction.guild_id), S3Service())
+            # Load hands from S3
+            logs = await load_all_poker_logs(str(interaction.guild_id), S3Service(), registered_players)
+
+            if not logs:
+                await interaction.followup.send("No poker hand data available yet.", ephemeral=True)
+                return
+
+            file_object = get_file_object_of_vpip_over_time(logs)
+            discord_file = discord.File(file_object, filename="vpip_over_time.png")
+
+            await interaction.followup.send(file=discord_file)
+        except Exception as e:
+            logger.error(f"Error in VPIP over time analysis: {e}")
             try:
                 await interaction.followup.send(f"An error occurred: {e!s}", ephemeral=True)
             except Exception as e:

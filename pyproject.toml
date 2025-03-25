@@ -78,6 +78,7 @@ exclude = ["**/__pycache__", "**/.pytest_cache"]
 pythonVersion = "3.12"
 typeCheckingMode = "strict"
 
+
 # Unknown type checks make working with 3p libraries too difficult
 reportMissingTypeStubs = "none"
 reportUnknownArgumentType = "none"
