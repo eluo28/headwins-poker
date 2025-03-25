@@ -1,38 +1,57 @@
 {
     "Edwin": {
-        "played_ids": ["9M0NBGM9an"],
-        "played_nicknames": ["edwin"],
+        "played_ids": [
+            "9M0NBGM9an"
+        ],
+        "played_nicknames": [
+            "edwin"
+        ],
         "initial_details": {
             "initial_net_amount": 1108.8,
             "initial_date": "2025-02-01"
         }
     },
     "Larry": {
-        "played_ids": ["vTnkzfSe3x", "f2FO7_98Oo"],
-        "played_nicknames": ["larry"],
+        "played_ids": [
+            "vTnkzfSe3x",
+            "f2FO7_98Oo"
+        ],
+        "played_nicknames": [
+            "larry"
+        ],
         "initial_details": {
             "initial_net_amount": -58.06,
             "initial_date": "2025-02-01"
         }
     },
     "Josh": {
-        "played_ids": ["Z_WOxDxS2G"],
-        "played_nicknames": ["joshy"],
+        "played_ids": [
+            "Z_WOxDxS2G"
+        ],
+        "played_nicknames": [
+            "joshy"
+        ],
         "initial_details": {
             "initial_net_amount": 179.28,
             "initial_date": "2025-02-01"
         }
     },
     "Allen": {
-        "played_ids": ["O4o2WcWz3Z"],
-        "played_nicknames": ["glenny"],
+        "played_ids": [
+            "O4o2WcWz3Z"
+        ],
+        "played_nicknames": [
+            "glenny"
+        ],
         "initial_details": {
             "initial_net_amount": 8.91,
             "initial_date": "2025-02-01"
         }
     },
     "Jeff": {
-        "played_ids": ["FMYFFNvVDL"],
+        "played_ids": [
+            "FMYFFNvVDL"
+        ],
         "played_nicknames": [],
         "initial_details": {
             "initial_net_amount": 104.99,
@@ -40,7 +59,9 @@
         }
     },
     "Mond": {
-        "played_ids": ["VnzuRuUJp5"],
+        "played_ids": [
+            "VnzuRuUJp5"
+        ],
         "played_nicknames": [],
         "initial_details": {
             "initial_net_amount": 208.64,
@@ -48,7 +69,9 @@
         }
     },
     "Gob": {
-        "played_ids": ["-HnKEXRxVA"],
+        "played_ids": [
+            "-HnKEXRxVA"
+        ],
         "played_nicknames": [],
         "initial_details": {
             "initial_net_amount": 273.77,
@@ -56,7 +79,9 @@
         }
     },
     "Nick": {
-        "played_ids": ["23ejw2m6D-"],
+        "played_ids": [
+            "23ejw2m6D-"
+        ],
         "played_nicknames": [],
         "initial_details": {
             "initial_net_amount": -91.06,
@@ -64,16 +89,24 @@
         }
     },
     "Dan": {
-        "played_ids": ["ArJnWs8BqK"],
-        "played_nicknames": ["the senate"],
+        "played_ids": [
+            "ArJnWs8BqK"
+        ],
+        "played_nicknames": [
+            "the senate"
+        ],
         "initial_details": {
             "initial_net_amount": -857.88,
             "initial_date": "2025-02-01"
         }
     },
     "Addison": {
-        "played_ids": ["YRv7Vh3JH0"],
-        "played_nicknames": [],
+        "played_ids": [
+            "YRv7Vh3JH0"
+        ],
+        "played_nicknames": [
+            "ako"
+        ],
         "initial_details": {
             "initial_net_amount": -87.69,
             "initial_date": "2025-02-01"
@@ -81,7 +114,10 @@
     },
     "Chris": {
         "played_ids": [],
-        "played_nicknames": ["kris", "CF"],
+        "played_nicknames": [
+            "kris",
+            "CF"
+        ],
         "initial_details": {
             "initial_net_amount": -178.45,
             "initial_date": "2025-02-01"
@@ -89,14 +125,23 @@
     },
     "Eli": {
         "played_ids": [],
-        "played_nicknames": ["Egan", "egan konopinsk"]
+        "played_nicknames": [
+            "Egan",
+            "egan konopinsk"
+        ]
     },
     "Jun": {
         "played_ids": [],
-        "played_nicknames": ["jun", "dhun"]
+        "played_nicknames": [
+            "jun",
+            "dhun"
+        ]
     },
     "Kyle": {
         "played_ids": [],
-        "played_nicknames": ["kyle", "kyle2"]
+        "played_nicknames": [
+            "kyle",
+            "kyle2"
+        ]
     }
 }
