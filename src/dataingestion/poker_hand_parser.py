@@ -147,7 +147,7 @@ def parse_poker_hand(entries: list[dict[str, str]], registered_players: list[Reg
     for i, entry in enumerate(entries):
         text = entry["entry"]
         if text.startswith("-- starting hand #"):
-            start_idx = i
+            start_idx = i + 1
             # Extract hand ID from format: -- starting hand #179 (id: bzhgiiupyhku)
             match = re.search(r'#\d+ \(id: ([^)]+)\)', text)
             if match:
@@ -413,6 +413,7 @@ async def load_all_poker_logs(guild_id: str, s3_service: S3Service, registered_p
             all_logs.append(log)
         except Exception as e:
             logger.error(f"Error parsing poker log {file_name}: {e}")
+            raise
 
     return all_logs
 
