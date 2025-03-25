@@ -156,7 +156,6 @@ def parse_poker_hand(entries: list[dict[str, str]], registered_players: list[Reg
             end_idx = i
             break
 
-    
     if start_idx is None or hand_id is None:
         raise ValueError("Could not find start of hand or hand ID")
 
@@ -366,7 +365,7 @@ def build_nickname_to_player_ids_mapping(hands: list[PokerHand]) -> dict[str, li
 async def get_poker_log_file_contents(
     guild_id: str,
     s3_service: S3Service,
-) -> list[StringIO]:
+) -> list[tuple[StringIO, str]]:
     """
     Gets contents of poker log CSV files from S3 for a guild.
 
@@ -376,7 +375,7 @@ async def get_poker_log_file_contents(
     Returns:
         List of csv file contents for each poker log CSV file
     """
-    csv_files: list[StringIO] = []
+    csv_files_content_and_names: list[tuple[StringIO, str]] = []
     try:
         file_names, _ = await s3_service.list_files(guild_id, "logs") 
         for file_name in file_names:
@@ -387,12 +386,12 @@ async def get_poker_log_file_contents(
                     raise Exception(file_content)
                 # Create a StringIO object
                 csv_file = StringIO(file_content)
-                csv_files.append(csv_file)
+                csv_files_content_and_names.append((csv_file, file_name))
     except Exception as e:
         logger.error(f"Error accessing S3: {e}")
         raise
 
-    return csv_files
+    return csv_files_content_and_names
 
 
 async def load_all_poker_logs(guild_id: str, s3_service: S3Service, registered_players: list[RegisteredPlayer]) -> list[PokerLog]:
@@ -406,14 +405,14 @@ async def load_all_poker_logs(guild_id: str, s3_service: S3Service, registered_p
         list of all poker hands combined
     """
     all_logs: list[PokerLog] = []
-    csv_files = await get_poker_log_file_contents(guild_id, s3_service)
+    csv_files_with_names = await get_poker_log_file_contents(guild_id, s3_service)
 
-    for csv_file in csv_files:
+    for csv_file, file_name in csv_files_with_names:
         try:
             log = parse_poker_log(csv_file, registered_players)
             all_logs.append(log)
         except Exception as e:
-            logger.error(f"Error parsing poker log: {e} for file {csv_file.name}")
+            logger.error(f"Error parsing poker log {file_name}: {e}")
 
     return all_logs
 
