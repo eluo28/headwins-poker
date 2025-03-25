@@ -409,8 +409,11 @@ async def load_all_poker_logs(guild_id: str, s3_service: S3Service, registered_p
     csv_files = await get_poker_log_file_contents(guild_id, s3_service)
 
     for csv_file in csv_files:
-        log = parse_poker_log(csv_file, registered_players)
-        all_logs.append(log)
+        try:
+            log = parse_poker_log(csv_file, registered_players)
+            all_logs.append(log)
+        except Exception as e:
+            logger.error(f"Error parsing poker log: {e} for file {csv_file.name}")
 
     return all_logs
 
