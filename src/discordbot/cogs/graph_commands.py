@@ -157,7 +157,14 @@ class GraphCommands(commands.Cog):
         name="graph_vpip_by_session",
         description="Generates a graph showing how each player's VPIP percentage changes over time",
     )
-    async def graph_vpip_by_session(self, interaction: discord.Interaction) -> None:
+    @app_commands.describe(
+        num_sessions="Number of most recent sessions to include (optional, defaults to all sessions)"
+    )
+    async def graph_vpip_by_session(
+        self, 
+        interaction: discord.Interaction,
+        num_sessions: int
+    ) -> None:
         logger.info(f"Graphing VPIP percentages over time for guild {interaction.guild_id}")
         try:
             await interaction.response.defer(thinking=True)
@@ -171,7 +178,7 @@ class GraphCommands(commands.Cog):
                 await interaction.followup.send("No poker hand data available yet.", ephemeral=True)
                 return
 
-            file_object = get_file_object_of_vpip_over_time(logs)
+            file_object = get_file_object_of_vpip_over_time(logs, num_sessions)
             discord_file = discord.File(file_object, filename="vpip_over_time.png")
 
             await interaction.followup.send(file=discord_file)

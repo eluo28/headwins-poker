@@ -53,13 +53,14 @@ def get_file_object_of_total_vpip(logs: list[PokerLog]) -> BytesIO:
     return buffer
 
 
-def get_file_object_of_vpip_over_time(logs: List[PokerLog]) -> BytesIO:
+def get_file_object_of_vpip_over_time(logs: List[PokerLog], num_sessions: int) -> BytesIO:
     """
     Creates a scatter plot showing VPIP percentage for each player over time.
     Each player is represented by a different color/marker in the legend.
     
     Args:
         logs: List of poker logs to analyze
+        num_sessions: Optional number of most recent sessions to include. If None, includes all sessions.
         
     Returns:
         BytesIO buffer containing the graph image
@@ -69,6 +70,9 @@ def get_file_object_of_vpip_over_time(logs: List[PokerLog]) -> BytesIO:
     
     # Sort logs by date
     sorted_logs = sorted(logs, key=lambda x: x.date)
+    
+    # Take only the most recent N sessions if specified
+    sorted_logs = sorted_logs[-num_sessions:]
     
     # Calculate VPIP for each log and create data points
     for log in sorted_logs:
@@ -95,7 +99,7 @@ def get_file_object_of_vpip_over_time(logs: List[PokerLog]) -> BytesIO:
             'vpip': 'VPIP %',
             'player': 'Player'
         },
-        title='VPIP % by Player Over Time'
+        title=f'VPIP % by Player Over Time{" (Last " + str(num_sessions) + " Sessions)" if num_sessions else ""}'
     )
     
     # Update layout
