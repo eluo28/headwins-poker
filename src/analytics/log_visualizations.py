@@ -38,7 +38,7 @@ def get_file_object_of_total_vpip(logs: list[PokerLog]) -> BytesIO:
 
     # Update layout
     fig.update_layout(
-        title="VPIP % by Player Across All Logs",
+        title="VPIP % by Player Across Logs",
         xaxis_title="Player",
         yaxis_title="VPIP %",
         yaxis_range=[0, 100],
